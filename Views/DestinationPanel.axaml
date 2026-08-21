@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+             xmlns:models="using:SparkPhotoDownloader.Models"
+             x:Class="SparkPhotoDownloader.Views.DestinationPanel"
+             x:DataType="vm:DestinationPanelViewModel">
+
+    <UserControl.Styles>
+        <!-- The generated folders are the point of this tree, so it opens expanded. -->
+        <Style Selector="TreeViewItem" x:DataType="vm:FolderNodeViewModel">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+        </Style>
+    </UserControl.Styles>
+
+    <!-- Half of the right-hand column: where one kind of file goes, how its folders and names
+         are generated, and whether the volume has room for it. -->
+    <Border Classes="Panel">
+        <DockPanel>
+
+            <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Width="3" Height="14" CornerRadius="2" Margin="0,0,7,0"
+                            Background="{Binding AccentBrush}" />
+                    <TextBlock Grid.Column="1" Classes="PanelTitle" Text="{Binding Title}" />
+                    <TextBlock Grid.Column="2" Classes="Faint" VerticalAlignment="Center"
+                               Text="{Binding SummaryText}" />
+                </Grid>
+            </Border>
+
+            <Border DockPanel.Dock="Top" Classes="AccentRule" Background="{Binding AccentBrush}" />
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <DockPanel>
+
+            <!-- Destination folder -->
+            <Border DockPanel.Dock="Top" Padding="10,8,10,4">
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="SectionLabel" Text="DOWNLOAD TO" Margin="0,0,0,2" />
+
+                    <Button HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Padding="8,6"
+                            Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ChooseDestinationCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="{Binding FolderPath}">
+                        <TextBlock Text="{Binding FolderDisplay}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Button>
+
+                    <StackPanel Spacing="2" IsVisible="{Binding DriveTotalBytes}">
+                        <ProgressBar Classes="Capacity" Maximum="100"
+                                     Value="{Binding UsedPercent}"
+                                     Foreground="{Binding AccentBrush}" />
+                        <TextBlock Classes="Faint" Text="{Binding SpaceText}" />
+                    </StackPanel>
+
+                    <TextBlock Classes="Faint"
+                               Foreground="{DynamicResource StateFailedBrush}"
+                               IsVisible="{Binding !HasEnoughSpace}"
+                               TextWrapping="Wrap"
+                               Text="There is not enough free space for the selected files." />
+                </StackPanel>
+            </Border>
+
+            <!-- Subfolder and rename schemes -->
+            <Border DockPanel.Dock="Top" Padding="10,2,10,6">
+                <StackPanel Spacing="3">
+
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="SectionLabel" Text="SUBFOLDER" />
+                        <Button Grid.Column="1" Classes="Icon" Content="Edit…"
+                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditSubfolderPresetsCommand}"
+                                CommandParameter="{Binding}" />
+                    </Grid>
+
+                    <ComboBox ItemsSource="{Binding SubfolderPresets}"
+                              SelectedItem="{Binding SelectedSubfolderPreset}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:NamePreset">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                        <TextBlock Classes="SectionLabel" Text="RENAME" />
+                        <Button Grid.Column="1" Classes="Icon" Content="Edit…"
+                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).EditRenamePresetsCommand}"
+                                CommandParameter="{Binding}" />
+                    </Grid>
+
+                    <ComboBox ItemsSource="{Binding RenamePresets}"
+                              SelectedItem="{Binding SelectedRenamePreset}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:NamePreset">
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <Border Background="{DynamicResource GridBrush}" CornerRadius="3"
+                            Padding="7,5" Margin="0,5,0,0">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="Faint" Text="EXAMPLE" />
+                            <TextBlock Text="{Binding ExampleFolder}"
+                                       Foreground="{Binding AccentBrush}"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding ExampleName}"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Classes="Faint"
+                               Foreground="{DynamicResource StateMissingBrush}"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding HasNameWarning}"
+                               Text="{Binding NameWarning}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Folder tree preview. It keeps a floor on its height and the panel scrolls
+                 instead, so dragging the splitter can never squeeze the tree out of sight. -->
+            <DockPanel MinHeight="130">
+                <TextBlock DockPanel.Dock="Top" Classes="SectionLabel"
+                           Margin="10,2,10,2"
+                           Text="FOLDERS (ITALIC = WILL BE CREATED)" />
+
+                <TreeView ItemsSource="{Binding Tree}"
+                          Margin="4,0,4,6"
+                          MinHeight="100"
+                          Background="{DynamicResource GridBrush}">
+                    <TreeView.ItemTemplate>
+                        <TreeDataTemplate x:DataType="vm:FolderNodeViewModel"
+                                          ItemsSource="{Binding Children}">
+                            <Grid ColumnDefinitions="*,Auto" ToolTip.Tip="{Binding Tooltip}">
+                                <TextBlock Text="{Binding Name}"
+                                           FontStyle="{Binding Style}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <Border Grid.Column="1" Margin="6,0,0,0" Padding="4,0"
+                                        CornerRadius="2"
+                                        IsVisible="{Binding HasFiles}"
+                                        Background="{Binding $parent[UserControl].((vm:DestinationPanelViewModel)DataContext).AccentBrush}">
+                                    <TextBlock Text="{Binding CountText}" FontSize="9"
+                                               FontWeight="Bold" Foreground="#FF15151A" />
+                                </Border>
+                            </Grid>
+                        </TreeDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </DockPanel>
+
+            </DockPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

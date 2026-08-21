@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+        x:Class="SparkPhotoDownloader.Views.HistoryWindow"
+        x:DataType="vm:HistoryViewModel"
+        Title="Download history"
+        Width="1000" Height="640"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBrush}">
+
+    <DockPanel>
+
+        <Border DockPanel.Dock="Top" Padding="12,9"
+                Background="{DynamicResource PanelHeaderBrush}">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                <TextBox Width="260" PlaceholderText="Search file name, path, device or Job Code"
+                         Text="{Binding SearchText}" />
+                <CheckBox Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center"
+                          Content="Only files whose copy is missing"
+                          IsChecked="{Binding ShowMissingOnly}" />
+                <Button Grid.Column="2" Classes="Toolbar" Content="Re-check"
+                        Command="{Binding LoadCommand}" />
+                <Button Grid.Column="3" Classes="Toolbar" Content="Forget all missing"
+                        Foreground="{DynamicResource StateMissingBrush}"
+                        Command="{Binding ForgetMissingCommand}" />
+            </Grid>
+        </Border>
+
+        <Border DockPanel.Dock="Bottom" Padding="12,7"
+                Background="{DynamicResource PanelHeaderBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="Subtle" Text="{Binding Summary}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Classes="Primary" Content="Close"
+                        IsCancel="True" IsDefault="True" Click="OnClose" />
+            </Grid>
+        </Border>
+
+        <Panel>
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Classes="Subtle" Text="Reading the history…"
+                       IsVisible="{Binding IsLoading}" />
+
+            <ListBox ItemsSource="{Binding Rows}"
+                     SelectedItem="{Binding SelectedRow}"
+                     IsVisible="{Binding !IsLoading}"
+                     Background="{DynamicResource GridBrush}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryRowViewModel">
+                        <Border Padding="10,6" BorderThickness="0,0,0,1"
+                                BorderBrush="{DynamicResource PanelBorderBrush}">
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Show the downloaded copy"
+                                              Command="{Binding $parent[Window].((vm:HistoryViewModel)DataContext).RevealCommand}"
+                                              CommandParameter="{Binding}" />
+                                    <MenuItem Header="Forget this download"
+                                              Command="{Binding $parent[Window].((vm:HistoryViewModel)DataContext).ForgetCommand}"
+                                              CommandParameter="{Binding}" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
+
+                            <Grid ColumnDefinitions="220,*,120,90,150,Auto">
+                                <TextBlock Text="{Binding FileName}"
+                                           TextTrimming="CharacterEllipsis"
+                                           FontWeight="SemiBold" />
+
+                                <TextBlock Grid.Column="1" Classes="Faint" Margin="8,0"
+                                           Text="{Binding DownloadPath}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding DownloadPath}" />
+
+                                <TextBlock Grid.Column="2" Classes="Subtle"
+                                           Text="{Binding WhenText}" />
+
+                                <TextBlock Grid.Column="3" Classes="Subtle"
+                                           Text="{Binding SizeText}" />
+
+                                <TextBlock Grid.Column="4" Classes="Faint"
+                                           Text="{Binding SourceText}"
+                                           TextTrimming="CharacterEllipsis" />
+
+                                <Border Grid.Column="5" CornerRadius="2" Padding="6,1"
+                                        Background="{Binding StatusBrush}">
+                                    <TextBlock Text="{Binding StatusText}"
+                                               FontSize="10" FontWeight="Bold"
+                                               Foreground="#FF15151A" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Panel>
+    </DockPanel>
+</Window>

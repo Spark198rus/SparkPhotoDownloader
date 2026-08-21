@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+             x:Class="SparkPhotoDownloader.Views.ThumbnailCard"
+             x:DataType="vm:ThumbnailViewModel">
+
+    <!-- One file in the grid. The card's border colour is its download state: blue for new,
+         grey for already downloaded, amber for downloaded-but-missing, green for just done. -->
+    <Border Classes="ThumbCard"
+            BorderBrush="{Binding StateBrush}"
+            BorderThickness="{Binding BorderThickness}"
+            ToolTip.Tip="{Binding Tooltip}">
+
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Check for download"
+                          Command="{Binding Owner.CheckSingleCommand}"
+                          CommandParameter="{Binding}" />
+                <MenuItem Header="Uncheck"
+                          Command="{Binding Owner.UncheckSingleCommand}"
+                          CommandParameter="{Binding}" />
+                <Separator />
+                <MenuItem Header="Forget download history (allow re-download)"
+                          IsEnabled="{Binding WasDownloadedBefore}"
+                          Command="{Binding Owner.ForgetFileCommand}"
+                          CommandParameter="{Binding}" />
+                <MenuItem Header="Show the downloaded copy"
+                          IsEnabled="{Binding WasDownloadedBefore}"
+                          Command="{Binding Owner.RevealDownloadCommand}"
+                          CommandParameter="{Binding}" />
+                <Separator />
+                <MenuItem Header="Show the source file"
+                          Command="{Binding Owner.RevealFileCommand}"
+                          CommandParameter="{Binding}" />
+            </ContextMenu>
+        </Border.ContextMenu>
+
+        <Grid RowDefinitions="*,Auto">
+
+            <!-- Preview -->
+            <Panel Grid.Row="0" Background="{DynamicResource GridBrush}" ClipToBounds="True">
+
+                <Image Source="{Binding Thumbnail}"
+                       Opacity="{Binding ImageOpacity}"
+                       Stretch="Uniform"
+                       Margin="2" />
+
+                <!-- Placeholder while the preview is being made, or when there is none -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="3"
+                            IsVisible="{Binding Thumbnail, Converter={x:Static ObjectConverters.IsNull}}">
+                    <TextBlock Text="{Binding Extension}"
+                               Foreground="{Binding KindBrush}"
+                               FontWeight="Bold" FontSize="15"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Classes="Faint" HorizontalAlignment="Center"
+                               IsVisible="{Binding ThumbnailFailed}"
+                               Text="no preview" />
+                </StackPanel>
+
+                <!-- An amber wash over files whose downloaded copy has gone missing, so they
+                     read as flagged even at a glance across a full screen of thumbnails. -->
+                <Border Background="{DynamicResource StateMissingGlowBrush}"
+                        IsVisible="{Binding IsMissingAtDestination}"
+                        IsHitTestVisible="False" />
+
+                <CheckBox IsChecked="{Binding IsChecked}"
+                          HorizontalAlignment="Left" VerticalAlignment="Top"
+                          Margin="4,3,0,0" />
+
+                <Border Classes="StatusBadge"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Background="{Binding StateBrush}"
+                        IsVisible="{Binding HasBadge}">
+                    <TextBlock Text="{Binding Badge}" />
+                </Border>
+
+                <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                        Margin="3" Padding="4,1" CornerRadius="2"
+                        Background="{Binding KindBrush}">
+                    <TextBlock Text="{Binding KindGlyph}" FontSize="8" FontWeight="Bold"
+                               Foreground="#FF15151A" />
+                </Border>
+            </Panel>
+
+            <!-- Caption -->
+            <StackPanel Grid.Row="1" Margin="6,4,6,5" Spacing="1">
+                <TextBlock Text="{Binding FileName}"
+                           FontSize="11"
+                           TextTrimming="CharacterEllipsis"
+                           Opacity="{Binding ImageOpacity}" />
+                <TextBlock Classes="Faint"
+                           TextTrimming="CharacterEllipsis"
+                           Text="{Binding DateText}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

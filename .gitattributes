@@ -1,0 +1,17 @@
+# Normalise line endings in the repository.
+* text=auto
+
+# The build and install scripts run on Linux and macOS. Checked out with CRLF they fail at
+# the shebang with "bad interpreter: /usr/bin/env bash^M", so pin them to LF everywhere,
+# including on Windows checkouts that produce the release archives.
+*.sh text eol=lf
+*.desktop text eol=lf
+*.plist text eol=lf
+
+# Windows-only, and the manifest is read by the Windows loader.
+*.manifest text eol=crlf
+
+# Never touch these.
+*.png binary
+*.ico binary
+*.icns binary

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Spark Photo Downloader</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>Spark Photo Downloader</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>net.sparkphotodownloader.app</string>
+
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <!-- The binary inside Contents/MacOS that Launch Services starts. -->
+    <key>CFBundleExecutable</key>
+    <string>SparkPhotoDownloader</string>
+
+    <key>CFBundleIconFile</key>
+    <string>app.icns</string>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>12.0</string>
+
+    <!-- Without this the window renders at 1x and looks soft on a Retina display. -->
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
+
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.photography</string>
+
+    <!-- macOS asks the user before letting the program read removable volumes and the
+         Pictures folder. These strings are what that prompt says; without them the system
+         kills the process instead of asking. -->
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Spark Photo Downloader reads photos and videos from memory cards and cameras you connect.</string>
+
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Spark Photo Downloader needs access to download photos and videos into folders you choose.</string>
+
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Spark Photo Downloader needs access to download photos and videos into folders you choose.</string>
+
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Spark Photo Downloader needs access to download photos and videos into folders you choose.</string>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Spark Photo Downloader needs access to write downloaded photos and videos to your Pictures folder.</string>
+</dict>
+</plist>

@@ -1,0 +1,55 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Window and panel surfaces. The chrome stays deliberately quiet so that thumbnails,
+         which are the only colourful thing on screen, carry the eye. -->
+    <Color x:Key="SurfaceColor">#FF1C1C1E</Color>
+    <Color x:Key="PanelColor">#FF252528</Color>
+    <Color x:Key="PanelHeaderColor">#FF303035</Color>
+    <Color x:Key="PanelBorderColor">#FF3A3A40</Color>
+    <Color x:Key="GridColor">#FF161618</Color>
+
+    <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+    <SolidColorBrush x:Key="PanelBrush" Color="{StaticResource PanelColor}" />
+    <SolidColorBrush x:Key="PanelHeaderBrush" Color="{StaticResource PanelHeaderColor}" />
+    <SolidColorBrush x:Key="PanelBorderBrush" Color="{StaticResource PanelBorderColor}" />
+    <SolidColorBrush x:Key="GridBrush" Color="{StaticResource GridColor}" />
+
+    <!-- Text -->
+    <SolidColorBrush x:Key="TextBrush" Color="#FFE8E8EA" />
+    <SolidColorBrush x:Key="SubtleTextBrush" Color="#FF9A9AA2" />
+    <SolidColorBrush x:Key="FaintTextBrush" Color="#FF6E6E76" />
+
+    <!-- Per-type accents: photos are blue, videos amber. The same two colours identify a
+         file's type on its thumbnail, in the destination panels, and in the summary bar. -->
+    <Color x:Key="PhotoAccentColor">#FF4FA3D1</Color>
+    <Color x:Key="VideoAccentColor">#FFD9A441</Color>
+    <SolidColorBrush x:Key="PhotoAccentBrush" Color="{StaticResource PhotoAccentColor}" />
+    <SolidColorBrush x:Key="VideoAccentBrush" Color="{StaticResource VideoAccentColor}" />
+    <SolidColorBrush x:Key="PhotoAccentDimBrush" Color="#552F6B8A" />
+    <SolidColorBrush x:Key="VideoAccentDimBrush" Color="#558A6B2F" />
+
+    <!-- Download state colours.
+         Green  = downloaded in this session
+         Grey   = downloaded before, copy still in place
+         Amber  = downloaded before, copy no longer at the destination
+         Red    = failed -->
+    <SolidColorBrush x:Key="StateNewBrush" Color="#FF4FA3D1" />
+    <SolidColorBrush x:Key="StateDoneBrush" Color="#FF5FB56A" />
+    <SolidColorBrush x:Key="StatePreviousBrush" Color="#FF7E7E88" />
+    <SolidColorBrush x:Key="StateMissingBrush" Color="#FFE2913A" />
+    <SolidColorBrush x:Key="StateFailedBrush" Color="#FFD2544B" />
+    <SolidColorBrush x:Key="StateMissingGlowBrush" Color="#33E2913A" />
+
+    <SolidColorBrush x:Key="SelectionBrush" Color="#FF2F6E9E" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#FF35353C" />
+    <SolidColorBrush x:Key="CapacityTrackBrush" Color="#FF3A3A40" />
+
+    <!-- Typography -->
+    <x:Double x:Key="HeaderFontSize">12</x:Double>
+    <x:Double x:Key="BodyFontSize">12</x:Double>
+    <x:Double x:Key="SmallFontSize">11</x:Double>
+    <x:Double x:Key="TinyFontSize">10</x:Double>
+
+    <Thickness x:Key="PanelPadding">10,8</Thickness>
+</ResourceDictionary>

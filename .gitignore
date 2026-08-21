@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+
+# Packaging output: self-contained builds, a few hundred megabytes per platform.
+# Release binaries are attached to GitHub releases rather than committed.
+artifacts/
+
+# IDE state
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

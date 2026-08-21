@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.4
+Name=Spark Photo Downloader
+GenericName=Photo and Video Downloader
+Comment=Copy photos and videos off cameras and memory cards, organised as they arrive
+Exec=spark-photo-downloader %U
+Icon=spark-photo-downloader
+Terminal=false
+Categories=Graphics;Photography;FileTransfer;
+Keywords=photo;video;camera;import;download;raw;memory card;dcim;
+StartupNotify=true
+StartupWMClass=SparkPhotoDownloader

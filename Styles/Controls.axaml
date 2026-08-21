@@ -1,0 +1,184 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Design.PreviewWith>
+        <Border Padding="20" Background="#1C1C1E">
+            <StackPanel Spacing="8">
+                <TextBlock Classes="PanelTitle" Text="Devices" />
+                <TextBlock Classes="Subtle" Text="Secondary text" />
+                <Button Classes="Toolbar" Content="Refresh" />
+            </StackPanel>
+        </Border>
+    </Design.PreviewWith>
+
+    <!-- ================================ Text ================================ -->
+
+    <Style Selector="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource BodyFontSize}" />
+    </Style>
+
+    <Style Selector="TextBlock.PanelTitle">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="{DynamicResource HeaderFontSize}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.Subtle">
+        <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+    </Style>
+
+    <Style Selector="TextBlock.Faint">
+        <Setter Property="Foreground" Value="{DynamicResource FaintTextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TinyFontSize}" />
+    </Style>
+
+    <Style Selector="TextBlock.SectionLabel">
+        <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource TinyFontSize}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,6,0,3" />
+    </Style>
+
+    <!-- ================================ Panels ================================ -->
+
+    <Style Selector="Border.Panel">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PanelBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+
+    <Style Selector="Border.PanelHeader">
+        <Setter Property="Background" Value="{DynamicResource PanelHeaderBrush}" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+
+    <!-- A thin coloured rule under a panel header, tinted per file type. -->
+    <Style Selector="Border.AccentRule">
+        <Setter Property="Height" Value="2" />
+    </Style>
+
+    <!-- ================================ Buttons ================================ -->
+
+    <Style Selector="Button.Toolbar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="8,5" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+    </Style>
+
+    <Style Selector="Button.Toolbar:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.Icon">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="5,3" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Foreground" Value="{DynamicResource SubtleTextBrush}" />
+    </Style>
+
+    <Style Selector="Button.Icon:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.Primary">
+        <Setter Property="Background" Value="{DynamicResource SelectionBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="18,9" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.Primary:disabled /template/ ContentPresenter">
+        <Setter Property="Background" Value="#FF33333A" />
+        <Setter Property="Foreground" Value="{DynamicResource FaintTextBrush}" />
+    </Style>
+
+    <!-- ================================ Inputs ================================ -->
+
+    <Style Selector="ComboBox">
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+
+    <Style Selector="TextBox">
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+
+    <Style Selector="CheckBox">
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+
+    <!-- ================================ Lists ================================ -->
+
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- ================================ Thumbnails ================================ -->
+
+    <!-- The card behind every thumbnail. Its border is the file's status colour. -->
+    <Style Selector="Border.ThumbCard">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Margin" Value="4" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="Border.ThumbCard:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+
+    <!-- The little status pill in the corner of a thumbnail. -->
+    <Style Selector="Border.StatusBadge">
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="Margin" Value="3" />
+    </Style>
+
+    <Style Selector="Border.StatusBadge > TextBlock">
+        <Setter Property="FontSize" Value="9" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="#FF15151A" />
+    </Style>
+
+    <!-- ================================ Misc ================================ -->
+
+    <Style Selector="Separator">
+        <Setter Property="Background" Value="{DynamicResource PanelBorderBrush}" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="0,4" />
+    </Style>
+
+    <Style Selector="ProgressBar.Capacity">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Background" Value="{DynamicResource CapacityTrackBrush}" />
+    </Style>
+
+    <Style Selector="GridSplitter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+
+    <Style Selector="ToolTip">
+        <Setter Property="MaxWidth" Value="460" />
+        <Setter Property="FontSize" Value="{DynamicResource SmallFontSize}" />
+    </Style>
+</Styles>

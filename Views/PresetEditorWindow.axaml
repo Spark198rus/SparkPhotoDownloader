@@ -1,0 +1,181 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+        xmlns:models="using:SparkPhotoDownloader.Models"
+        xmlns:conv="using:SparkPhotoDownloader.Converters"
+        x:Class="SparkPhotoDownloader.Views.PresetEditorWindow"
+        x:DataType="vm:PresetEditorViewModel"
+        Title="{Binding Title}"
+        Width="860" Height="620"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBrush}">
+
+    <Window.Resources>
+        <conv:EnumLabelConverter x:Key="EnumLabel" />
+    </Window.Resources>
+
+    <DockPanel>
+
+        <Border DockPanel.Dock="Bottom" Padding="14,10"
+                Background="{DynamicResource PanelHeaderBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Classes="Subtle" Text="Example:" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Preview}" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource PhotoAccentBrush}" />
+                </StackPanel>
+                <Button Grid.Column="1" Classes="Primary" Content="Done"
+                        IsCancel="True" IsDefault="True" Click="OnClose" />
+            </Grid>
+        </Border>
+
+        <Grid ColumnDefinitions="260,*">
+
+            <!-- Preset list -->
+            <Border Classes="Panel" Margin="8">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                        <TextBlock Classes="PanelTitle" Text="Presets" />
+                    </Border>
+
+                    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal"
+                                Spacing="2" Margin="6">
+                        <Button Classes="Toolbar" Content="New" Command="{Binding CreateCommand}" />
+                        <Button Classes="Toolbar" Content="Duplicate" Command="{Binding DuplicateCommand}" />
+                        <Button Classes="Toolbar" Content="Rename" Command="{Binding RenameCommand}"
+                                IsEnabled="{Binding CanEditSelected}" />
+                        <Button Classes="Toolbar" Content="Delete" Command="{Binding DeleteCommand}"
+                                IsEnabled="{Binding CanEditSelected}"
+                                Foreground="{DynamicResource StateFailedBrush}" />
+                    </StackPanel>
+
+                    <ListBox ItemsSource="{Binding Presets}"
+                             SelectedItem="{Binding SelectedPreset}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:NamePreset">
+                                <Border Padding="8,5">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Classes="Faint" Text="built-in"
+                                                   IsVisible="{Binding IsBuiltIn}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <!-- Part editor -->
+            <Border Grid.Column="1" Classes="Panel" Margin="0,8,8,8">
+                <DockPanel>
+                    <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                        <TextBlock Classes="PanelTitle" Text="Parts" />
+                    </Border>
+
+                    <TextBlock DockPanel.Dock="Top" Classes="Faint" Margin="10,8"
+                               TextWrapping="Wrap" Text="{Binding EditHint}" />
+
+                    <Border DockPanel.Dock="Bottom" Padding="10,8"
+                            IsEnabled="{Binding CanEditSelected}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ComboBox ItemsSource="{Binding TokenOptions}"
+                                      SelectedItem="{Binding TokenToAdd}"
+                                      MinWidth="200">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Classes="Toolbar" Content="Add part"
+                                    Command="{Binding AddPartCommand}" />
+                        </StackPanel>
+                    </Border>
+
+                    <ScrollViewer IsEnabled="{Binding CanEditSelected}">
+                        <ItemsControl ItemsSource="{Binding Parts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:NamePartViewModel">
+                                    <Border Margin="8,3" Padding="8,6" CornerRadius="3"
+                                            Background="{DynamicResource GridBrush}">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+
+                                            <WrapPanel Grid.Row="0" Grid.Column="0"
+                                                       Orientation="Horizontal" ItemSpacing="6"
+                                                       LineSpacing="4">
+                                                <ComboBox ItemsSource="{Binding TokenOptions}"
+                                                          SelectedItem="{Binding Token}"
+                                                          MinWidth="190">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+
+                                                <TextBox Text="{Binding Text}" Width="130"
+                                                         PlaceholderText="text"
+                                                         IsVisible="{Binding IsText}" />
+
+                                                <ComboBox ItemsSource="{Binding FormatOptions}"
+                                                          SelectedItem="{Binding Format}"
+                                                          MinWidth="150"
+                                                          IsVisible="{Binding IsDate}" />
+
+                                                <ComboBox ItemsSource="{Binding DateSourceOptions}"
+                                                          SelectedItem="{Binding DateSource}"
+                                                          MinWidth="180"
+                                                          IsVisible="{Binding IsDate}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+
+                                                <ComboBox ItemsSource="{Binding DigitOptions}"
+                                                          SelectedItem="{Binding Digits}"
+                                                          MinWidth="70"
+                                                          IsVisible="{Binding HasDigits}"
+                                                          ToolTip.Tip="Number of digits" />
+
+                                                <ComboBox ItemsSource="{Binding CaseOptions}"
+                                                          SelectedItem="{Binding Case}"
+                                                          MinWidth="130"
+                                                          IsVisible="{Binding HasCase}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </WrapPanel>
+
+                                            <StackPanel Grid.Row="0" Grid.Column="1"
+                                                        Orientation="Horizontal" Spacing="1"
+                                                        VerticalAlignment="Top">
+                                                <Button Classes="Icon" Content="↑"
+                                                        Command="{Binding $parent[Window].((vm:PresetEditorViewModel)DataContext).MovePartUpCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Classes="Icon" Content="↓"
+                                                        Command="{Binding $parent[Window].((vm:PresetEditorViewModel)DataContext).MovePartDownCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                <Button Classes="Icon" Content="✕"
+                                                        Foreground="{DynamicResource StateFailedBrush}"
+                                                        Command="{Binding $parent[Window].((vm:PresetEditorViewModel)DataContext).RemovePartCommand}"
+                                                        CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

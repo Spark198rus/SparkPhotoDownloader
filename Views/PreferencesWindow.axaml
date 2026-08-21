@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+        xmlns:conv="using:SparkPhotoDownloader.Converters"
+        x:Class="SparkPhotoDownloader.Views.PreferencesWindow"
+        x:DataType="vm:PreferencesViewModel"
+        Title="Preferences"
+        Width="620" Height="720"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBrush}">
+
+    <Window.Resources>
+        <conv:EnumLabelConverter x:Key="EnumLabel" />
+    </Window.Resources>
+
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Padding="16,10"
+                Background="{DynamicResource PanelHeaderBrush}">
+            <Button Classes="Primary" Content="Close" HorizontalAlignment="Right"
+                    IsCancel="True" IsDefault="True"
+                    Click="OnClose" />
+        </Border>
+
+        <ScrollViewer Padding="18,14">
+            <StackPanel Spacing="18">
+
+                <!-- Devices -->
+                <StackPanel Spacing="7">
+                    <TextBlock Classes="PanelTitle" Text="Devices" FontSize="14" />
+                    <CheckBox Content="Look for devices automatically as they are connected"
+                              IsChecked="{Binding ScanDevicesAutomatically}" />
+                    <CheckBox Content="Only treat a volume as a device when it holds a camera folder (DCIM and similar)"
+                              IsChecked="{Binding OnlyExternalDevicesWithCameraFolder}" />
+                    <CheckBox Content="Include internal drives in the device list"
+                              IsChecked="{Binding IncludeFixedDrives}" />
+                    <CheckBox Content="Start downloading as soon as a device is connected"
+                              IsChecked="{Binding StartDownloadOnDeviceInsertion}" />
+                    <CheckBox Content="Say when devices can be removed after a download"
+                              IsChecked="{Binding EjectAfterDownload}" />
+                </StackPanel>
+
+                <Separator />
+
+                <!-- Downloading -->
+                <StackPanel Spacing="7">
+                    <TextBlock Classes="PanelTitle" Text="Downloading" FontSize="14" />
+
+                    <CheckBox Content="Leave previously downloaded files unchecked"
+                              IsChecked="{Binding AutoUncheckPreviouslyDownloaded}" />
+                    <TextBlock Classes="Faint" Margin="26,0,0,4" TextWrapping="Wrap"
+                               Text="Files this program has downloaded before are remembered forever and are not offered again by default." />
+
+                    <CheckBox Content="Also re-download files whose copy has gone missing from the destination"
+                              IsChecked="{Binding RedownloadWhenMissingAtDestination}" />
+                    <TextBlock Classes="Faint" Margin="26,0,0,4" TextWrapping="Wrap"
+                               Text="Off by default. Leave it off and such files are only flagged in amber, never fetched again; you can still forget one from its right-click menu to bring it back." />
+
+                    <CheckBox Content="Verify each copy by comparing a hash of source and destination"
+                              IsChecked="{Binding VerifyCopies}" />
+                    <TextBlock Classes="Faint" Margin="26,0,0,4" TextWrapping="Wrap"
+                               Text="Safer, and roughly twice as slow, because every file is read back after it is written." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <TextBlock Text="When a file of that name already exists:"
+                                   VerticalAlignment="Center" />
+                        <ComboBox ItemsSource="{Binding ConflictOptions}"
+                                  SelectedItem="{Binding ConflictResolution}"
+                                  MinWidth="200">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator />
+
+                <!-- Thumbnails -->
+                <StackPanel Spacing="7">
+                    <TextBlock Classes="PanelTitle" Text="Previews" FontSize="14" />
+                    <CheckBox Content="Generate thumbnails" IsChecked="{Binding GenerateThumbnails}" />
+                    <CheckBox Content="Use ffmpeg to pull a frame from videos"
+                              IsChecked="{Binding UseFfmpegForVideoThumbnails}" />
+                    <TextBlock Classes="Faint" TextWrapping="Wrap" Text="{Binding FfmpegStatus}" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,4,0,0">
+                        <Button Classes="Toolbar" Content="Clear thumbnail cache"
+                                Command="{Binding ClearThumbnailCacheCommand}" />
+                        <TextBlock Classes="Faint" VerticalAlignment="Center"
+                                   Text="{Binding CacheInfo}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator />
+
+                <!-- History -->
+                <StackPanel Spacing="7">
+                    <TextBlock Classes="PanelTitle" Text="Download history" FontSize="14" />
+                    <TextBlock Classes="Faint" TextWrapping="Wrap" Text="{Binding HistoryInfo}" />
+                    <TextBlock Classes="Faint" TextWrapping="Wrap"
+                               Text="Each file is remembered by its name, modification time and size, so it stays recognised after it is renamed at the destination or the card is used again." />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                        <Button Classes="Toolbar" Content="Forget rows whose copies are gone"
+                                Command="{Binding ForgetMissingCommand}" />
+                        <Button Classes="Toolbar" Content="Clear the whole history"
+                                Foreground="{DynamicResource StateFailedBrush}"
+                                Command="{Binding ClearHistoryCommand}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Separator />
+
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="PanelTitle" Text="Storage" FontSize="14" />
+                    <TextBlock Classes="Faint" Text="{Binding DataDirectory}" TextWrapping="Wrap" />
+                    <Button Classes="Toolbar" Content="Open the data folder"
+                            HorizontalAlignment="Left"
+                            Command="{Binding OpenDataFolderCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

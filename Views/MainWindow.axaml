@@ -1,0 +1,400 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+        xmlns:conv="using:SparkPhotoDownloader.Converters"
+        xmlns:views="using:SparkPhotoDownloader.Views"
+        x:Class="SparkPhotoDownloader.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Spark Photo Downloader"
+        Width="1500" Height="950"
+        MinWidth="1080" MinHeight="640"
+        Background="{DynamicResource SurfaceBrush}"
+        Icon="/Assets/app.ico">
+
+    <Window.Resources>
+        <conv:EnumLabelConverter x:Key="EnumLabel" />
+        <conv:ProximityLabelConverter x:Key="ProximityLabel" />
+    </Window.Resources>
+
+    <DockPanel LastChildFill="True">
+
+        <!-- ============================ Toolbar ============================ -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource PanelHeaderBrush}"
+                BorderBrush="{DynamicResource PanelBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="8,5">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button Classes="Toolbar" Content="Refresh devices"
+                            Command="{Binding RefreshDevicesCommand}" />
+                    <Button Classes="Toolbar" Content="Rescan all"
+                            Command="{Binding RescanCommand}" />
+                    <Button Classes="Toolbar" Content="Add folder…"
+                            Command="{Binding AddComputerSourceCommand}" />
+                    <Border Width="1" Margin="6,4"
+                            Background="{DynamicResource PanelBorderBrush}" />
+                    <Button Classes="Toolbar" Content="Re-check destinations"
+                            Command="{Binding RecheckDestinationsCommand}"
+                            ToolTip.Tip="Look again at every previously downloaded file to see whether its copy is still at the destination." />
+                    <Button Classes="Toolbar" Content="Download history…"
+                            Command="{Binding ShowHistoryCommand}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Classes="Subtle"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Text="{Binding LibrarySummary}" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                    <Button Classes="Toolbar" Content="Preferences…"
+                            Command="{Binding ShowPreferencesCommand}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============================ Status bar ============================ -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource PanelHeaderBrush}"
+                BorderBrush="{DynamicResource PanelBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="10,5">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Classes="Subtle" Text="{Binding StatusText}" VerticalAlignment="Center" />
+
+                <!-- The flagged-files chip. Only appears when there is something to flag. -->
+                <Border Grid.Column="1"
+                        HorizontalAlignment="Center"
+                        IsVisible="{Binding HasMissing}"
+                        Background="{DynamicResource StateMissingGlowBrush}"
+                        BorderBrush="{DynamicResource StateMissingBrush}"
+                        BorderThickness="1"
+                        CornerRadius="3"
+                        Padding="8,2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Foreground="{DynamicResource StateMissingBrush}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding MissingCount, StringFormat='{}{0} downloaded file(s) missing at destination'}" />
+                        <Button Classes="Icon" Content="Show"
+                                Foreground="{DynamicResource StateMissingBrush}"
+                                Command="{Binding ShowMissingOnlyCommand}" />
+                        <Button Classes="Icon" Content="Forget"
+                                Foreground="{DynamicResource StateMissingBrush}"
+                                Command="{Binding ForgetAllMissingCommand}"
+                                ToolTip.Tip="Clear the history for these files so they will be downloaded again." />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Column="2" Classes="Faint" VerticalAlignment="Center"
+                           Text="{Binding SelectionSummary}" />
+            </Grid>
+        </Border>
+
+        <!-- ============================ Three columns ============================ -->
+        <Grid ColumnDefinitions="320,4,*,4,380" Margin="6">
+
+            <!-- LEFT: sources -->
+            <Grid Grid.Column="0" RowDefinitions="2*,4,Auto,4,3*">
+
+                <!-- Devices -->
+                <Border Grid.Row="0" Classes="Panel">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="PanelTitle" Text="Devices" />
+                                <TextBlock Grid.Column="1" Classes="Faint" VerticalAlignment="Center"
+                                           Text="{Binding Devices.Count, StringFormat='{}{0} found'}" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock DockPanel.Dock="Top" Classes="Faint" Margin="10,10"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{Binding !Devices.Count}"
+                                   Text="No cameras, phones or memory cards detected. Insert a card or connect a camera, or add a folder from your computer below." />
+
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding Devices}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SourceViewModel">
+                                        <views:SourceCard />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+                <!-- This Computer -->
+                <Border Grid.Row="2" Classes="Panel" MaxHeight="260">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="PanelTitle" Text="This Computer" />
+                                <Button Grid.Column="1" Classes="Icon" Content="+ Add folder"
+                                        Command="{Binding AddComputerSourceCommand}" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock DockPanel.Dock="Top" Classes="Faint" Margin="10,8"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{Binding !ComputerSources.Count}"
+                                   Text="Add a folder to download from it, including everything in its subfolders." />
+
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding ComputerSources}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SourceViewModel">
+                                        <views:SourceCard />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <GridSplitter Grid.Row="3" ResizeDirection="Rows" />
+
+                <!-- Timeline -->
+                <Border Grid.Row="4" Classes="Panel">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Classes="PanelTitle" Text="Timeline" />
+                                <TextBlock Grid.Column="1" Classes="Faint" VerticalAlignment="Center"
+                                           Text="{Binding ProximityMinutes, Converter={StaticResource ProximityLabel}}" />
+                            </Grid>
+                        </Border>
+
+                        <StackPanel DockPanel.Dock="Top" Margin="10,6,10,2">
+                            <TextBlock Classes="Faint"
+                                       Text="A new group starts when the gap between shots is longer than:"
+                                       TextWrapping="Wrap" />
+                            <Slider Minimum="0" Maximum="13" TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    Value="{Binding ProximityIndex, Mode=TwoWay}" />
+                        </StackPanel>
+
+                        <TextBlock DockPanel.Dock="Bottom" Classes="Faint" Margin="10,4"
+                                   IsVisible="{Binding Timeline.Count}"
+                                   Text="Select groups to show only those files." />
+
+                        <ScrollViewer>
+                            <ItemsControl ItemsSource="{Binding Timeline}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TimelineGroupViewModel">
+                                        <Border Margin="6,2" Padding="8,5" CornerRadius="3"
+                                                Background="{DynamicResource GridBrush}">
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <CheckBox IsChecked="{Binding IsSelected}"
+                                                          VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding DateLabel}"
+                                                               FontWeight="SemiBold" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Classes="Faint" Text="{Binding TimeLabel}" />
+                                                        <TextBlock Classes="Faint" Text="{Binding CountText}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" />
+
+            <!-- CENTRE: thumbnails -->
+            <Border Grid.Column="2" Classes="Panel">
+                <DockPanel>
+
+                    <!-- Grid toolbar -->
+                    <Border DockPanel.Dock="Top" Classes="PanelHeader">
+                        <!-- The check-all buttons dock right so they keep their space; the
+                             filter controls take what is left and scroll if the window is
+                             narrow, rather than pushing anything off the edge. -->
+                        <DockPanel LastChildFill="True">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2"
+                                        Margin="10,0,0,0">
+                                <TextBlock Classes="Subtle" Text="Check" VerticalAlignment="Center"
+                                           Margin="0,0,4,0" />
+                                <Button Classes="Toolbar" Content="All" MinWidth="0"
+                                        Command="{Binding CheckAllCommand}" />
+                                <Button Classes="Toolbar" Content="None"
+                                        Command="{Binding UncheckAllCommand}" />
+                                <Button Classes="Toolbar" Content="New only"
+                                        Command="{Binding CheckOnlyNewCommand}" />
+                                <Button Classes="Toolbar" Content="Photos"
+                                        Foreground="{DynamicResource PhotoAccentBrush}"
+                                        Command="{Binding CheckAllPhotosCommand}" />
+                                <Button Classes="Toolbar" Content="Videos"
+                                        Foreground="{DynamicResource VideoAccentBrush}"
+                                        Command="{Binding CheckAllVideosCommand}" />
+                            </StackPanel>
+
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled">
+                                <StackPanel Orientation="Horizontal" Spacing="6"
+                                            VerticalAlignment="Center">
+                                    <TextBlock Classes="Subtle" Text="Show" VerticalAlignment="Center" />
+                                    <ComboBox ItemsSource="{Binding FilterOptions}"
+                                              SelectedItem="{Binding Filter}"
+                                              MinWidth="148">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Classes="Subtle" Text="Sort by" VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
+                                    <ComboBox ItemsSource="{Binding SortOptions}"
+                                              SelectedItem="{Binding Sort}"
+                                              MinWidth="132">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <Button Classes="Icon"
+                                            Command="{Binding ToggleSortDirectionCommand}"
+                                            Content="{Binding SortDirection, Converter={StaticResource EnumLabel}}" />
+
+                                    <TextBlock Classes="Subtle" Text="Size" VerticalAlignment="Center"
+                                               Margin="8,0,0,0" />
+                                    <Slider Width="78" Minimum="100" Maximum="320"
+                                            TickFrequency="20" IsSnapToTickEnabled="True"
+                                            Value="{Binding ThumbnailSize}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Download progress -->
+                    <Border DockPanel.Dock="Bottom" Padding="10,6"
+                            IsVisible="{Binding IsDownloading}"
+                            Background="{DynamicResource PanelHeaderBrush}">
+                        <StackPanel Spacing="4">
+                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="6" />
+                            <TextBlock Classes="Faint" Text="{Binding ProgressText}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Empty state -->
+                    <Panel>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Spacing="6" MaxWidth="420"
+                                    IsVisible="{Binding !Files.Count}">
+                            <TextBlock Classes="Subtle" HorizontalAlignment="Center"
+                                       Text="Nothing to show" FontSize="15" />
+                            <TextBlock Classes="Faint" TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Text="Insert a memory card or connect a camera, or add a folder under This Computer. If files were found but hidden, check the Show filter above." />
+                        </StackPanel>
+
+                        <ScrollViewer Background="{DynamicResource GridBrush}"
+                                      IsVisible="{Binding Files.Count}">
+                            <ItemsRepeater x:Name="ThumbnailGrid" ItemsSource="{Binding Files}" Margin="4">
+                                <ItemsRepeater.Layout>
+                                    <!-- Sized from code-behind: a layout is not part of the
+                                         visual tree, so it never inherits a DataContext. -->
+                                    <UniformGridLayout ItemsStretch="Fill"
+                                                       MinItemWidth="160"
+                                                       MinItemHeight="198"
+                                                       MinColumnSpacing="0"
+                                                       MinRowSpacing="0" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ThumbnailViewModel">
+                                        <views:ThumbnailCard />
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </ScrollViewer>
+                    </Panel>
+                </DockPanel>
+            </Border>
+
+            <GridSplitter Grid.Column="3" ResizeDirection="Columns" />
+
+            <!-- RIGHT: destinations -->
+            <Grid Grid.Column="4" RowDefinitions="*,4,*,Auto">
+
+                <views:DestinationPanel Grid.Row="0" DataContext="{Binding PhotoPanel}" />
+
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" />
+
+                <views:DestinationPanel Grid.Row="2" DataContext="{Binding VideoPanel}" />
+
+                <!-- Job Code, backup and the Download button -->
+                <Border Grid.Row="3" Classes="Panel" Margin="0,4,0,0">
+                    <StackPanel Margin="10,8" Spacing="6">
+
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Classes="SectionLabel" Text="JOB CODE" VerticalAlignment="Center"
+                                       Margin="0,0,8,0" />
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding JobCodes}"
+                                      SelectedItem="{Binding SelectedJobCode}"
+                                      PlaceholderText="(none)"
+                                      HorizontalAlignment="Stretch" />
+                            <Button Grid.Column="2" Classes="Icon" Content="+"
+                                    Command="{Binding AddJobCodeCommand}"
+                                    ToolTip.Tip="Add a Job Code" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="Auto,*">
+                            <CheckBox Content="Back up to" IsChecked="{Binding BackupEnabled}"
+                                      VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                        IsEnabled="{Binding BackupEnabled}"
+                                        HorizontalAlignment="Right">
+                                <Button Classes="Icon" Content="Photos…"
+                                        Command="{Binding ChooseBackupCommand}"
+                                        CommandParameter="photo"
+                                        ToolTip.Tip="{Binding PhotoBackupPath}" />
+                                <Button Classes="Icon" Content="Videos…"
+                                        Command="{Binding ChooseBackupCommand}"
+                                        CommandParameter="video"
+                                        ToolTip.Tip="{Binding VideoBackupPath}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <ComboBox ItemsSource="{Binding TransferModes}"
+                                  SelectedItem="{Binding TransferMode}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource EnumLabel}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,2,0,0">
+                            <Button Classes="Primary"
+                                    HorizontalAlignment="Stretch"
+                                    Command="{Binding DownloadCommand}"
+                                    IsVisible="{Binding !IsDownloading}"
+                                    Content="{Binding SelectionSummary}" />
+                            <Button Grid.ColumnSpan="2" Classes="Primary"
+                                    HorizontalAlignment="Stretch"
+                                    Background="{DynamicResource StateFailedBrush}"
+                                    Command="{Binding CancelDownloadCommand}"
+                                    IsVisible="{Binding IsDownloading}"
+                                    Content="Cancel download" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

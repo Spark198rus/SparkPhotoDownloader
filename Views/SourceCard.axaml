@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SparkPhotoDownloader.ViewModels"
+             x:Class="SparkPhotoDownloader.Views.SourceCard"
+             x:DataType="vm:SourceViewModel">
+
+    <!-- One device or folder in the left column, with its capacity bar and file counts. -->
+    <Border Margin="6,3" Padding="8,6" CornerRadius="3"
+            Background="{DynamicResource GridBrush}"
+            ToolTip.Tip="{Binding RootPath}">
+
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Open in file manager"
+                          Command="{Binding Owner.RevealSourceCommand}"
+                          CommandParameter="{Binding}" />
+                <MenuItem Header="Remove from sources"
+                          IsEnabled="{Binding IsUserAdded}"
+                          Command="{Binding Owner.RemoveComputerSourceCommand}"
+                          CommandParameter="{Binding}" />
+            </ContextMenu>
+        </Border.ContextMenu>
+
+        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto">
+
+            <CheckBox Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
+                      IsChecked="{Binding IsChecked}"
+                      VerticalAlignment="Top" Margin="0,1,4,0"
+                      ToolTip.Tip="Check or uncheck every file found on this source" />
+
+            <TextBlock Grid.Row="0" Grid.Column="1"
+                       Text="{Binding Name}"
+                       FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis" />
+
+            <TextBlock Grid.Row="1" Grid.Column="1"
+                       Classes="Faint"
+                       Text="{Binding Subtitle}"
+                       TextTrimming="CharacterEllipsis" />
+
+            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,5,0,0" Spacing="2"
+                        IsVisible="{Binding HasCapacity}">
+                <ProgressBar Classes="Capacity"
+                             Value="{Binding UsedPercent}" Maximum="100"
+                             Foreground="{Binding AccentBrush}" />
+                <TextBlock Classes="Faint" Text="{Binding CapacityText}" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="3" Grid.Column="1" Margin="0,4,0,0"
+                       Classes="Subtle"
+                       Text="{Binding StatusText}"
+                       TextTrimming="CharacterEllipsis" />
+        </Grid>
+    </Border>
+</UserControl>
