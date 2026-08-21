@@ -58,7 +58,9 @@ publish_one() {
         -o "$dest"
 }
 
-rm -rf "$OUT"
+# Clear only what this run rewrites, so building arm64 and then x64 leaves both archives in
+# place rather than the second wiping the first.
+rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 case "$ARCH" in
