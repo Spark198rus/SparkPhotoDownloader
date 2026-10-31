@@ -10,19 +10,26 @@
 #   ./build/macos/build-macos.sh --arch universal         # both (macOS host only)
 #   ./build/macos/build-macos.sh --sign "Developer ID Application: Name (TEAMID)"
 #   ./build/macos/build-macos.sh --sign "..." --notarize NOTARY_PROFILE
+#
+# Without --sign the bundle is still signed ad hoc: Apple silicon refuses to run arm64 code
+# that carries no signature at all, and Gatekeeper reports such an app as "damaged". On macOS
+# that uses codesign; elsewhere it needs rcodesign (https://github.com/indygreg/apple-platform-rs,
+# `cargo install apple-codesign`, or a prebuilt binary on PATH). --unsigned skips it.
 
 set -euo pipefail
 
 ARCH="arm64"
 SIGN_IDENTITY=""
 NOTARY_PROFILE=""
+SKIP_ADHOC=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --arch)     ARCH="$2"; shift 2 ;;
         --sign)     SIGN_IDENTITY="$2"; shift 2 ;;
         --notarize) NOTARY_PROFILE="$2"; shift 2 ;;
-        -h|--help)  sed -n '2,14p' "$0"; exit 0 ;;
+        --unsigned) SKIP_ADHOC=true; shift ;;
+        -h|--help)  sed -n '2,19p' "$0"; exit 0 ;;
         *) echo "unknown option: $1" >&2; exit 1 ;;
     esac
 done
@@ -38,6 +45,23 @@ fi
 
 if [[ -n "$SIGN_IDENTITY$NOTARY_PROFILE" && "$ON_MAC" != true ]]; then
     echo "signing and notarising need Apple's codesign and notarytool, so they only run on macOS." >&2
+    exit 1
+fi
+
+if [[ -n "$NOTARY_PROFILE" && -z "$SIGN_IDENTITY" ]]; then
+    echo "--notarize needs --sign: Apple only notarises Developer ID signed apps." >&2
+    exit 1
+fi
+
+# Fail before the slow publish rather than after it: an unsigned arm64 bundle is not a
+# usable artifact, it is the "app is damaged" error waiting to happen on the user's Mac.
+if [[ -z "$SIGN_IDENTITY" && "$SKIP_ADHOC" != true && "$ON_MAC" != true ]] \
+        && ! command -v rcodesign >/dev/null 2>&1; then
+    echo "rcodesign was not found on PATH." >&2
+    echo "Apple silicon will not run an unsigned bundle, so cross-compiled builds are signed" >&2
+    echo "ad hoc with rcodesign. Install it with 'cargo install apple-codesign', or download a" >&2
+    echo "release from https://github.com/indygreg/apple-platform-rs/releases." >&2
+    echo "Pass --unsigned to build anyway (the result will not launch on an M-series Mac)." >&2
     exit 1
 fi
 
@@ -99,9 +123,11 @@ chmod +x "$APP/Contents/MacOS/SparkPhotoDownloader" 2>/dev/null || true
 
 echo "==> bundle assembled: $APP"
 
-# ---- signing and notarisation (macOS host only) -----------------------------------------
+# ---- signing and notarisation -----------------------------------------------------------
 
 if [[ -n "$SIGN_IDENTITY" ]]; then
+    # Finder metadata and quarantine flags make codesign refuse the bundle.
+    xattr -cr "$APP"
     echo "==> signing"
     ENTITLEMENTS="$ROOT/build/macos/entitlements.plist"
 
@@ -117,6 +143,24 @@ if [[ -n "$SIGN_IDENTITY" ]]; then
         --entitlements "$ENTITLEMENTS" --sign "$SIGN_IDENTITY" "$APP"
     codesign --verify --deep --strict --verbose=2 "$APP"
     echo "==> signed"
+elif [[ "$SKIP_ADHOC" != true ]]; then
+    # Ad hoc signature ("-"): no certificate, no Gatekeeper approval, but a valid code
+    # signature over every Mach-O file and the bundle as a whole. That is the minimum Apple
+    # silicon demands before it will execute anything; without it the kernel kills the
+    # process and Finder calls the app damaged. No hardened runtime, so no JIT entitlements.
+    echo "==> signing ad hoc"
+    if [[ "$ON_MAC" == true ]]; then
+        xattr -cr "$APP"
+        codesign --force --deep --sign - "$APP"
+        codesign --verify --deep --strict --verbose=2 "$APP"
+    else
+        # rcodesign signs ad hoc when given no key, walking the bundle and sealing every
+        # nested Mach-O before the main executable.
+        rcodesign sign "$APP"
+    fi
+    echo "==> signed ad hoc"
+else
+    echo "==> WARNING: bundle left unsigned (--unsigned); it will not launch on Apple silicon" >&2
 fi
 
 if [[ -n "$NOTARY_PROFILE" ]]; then
@@ -148,6 +192,6 @@ else
     echo
     echo "Copy it to the Mac, then:"
     echo "    tar xzf \"$(basename "$TARBALL")\""
-    echo "    xattr -dr com.apple.quarantine \"$APP_NAME.app\"    # unsigned build"
+    echo "    xattr -dr com.apple.quarantine \"$APP_NAME.app\"    # not notarised"
     echo "    open \"$APP_NAME.app\""
 fi

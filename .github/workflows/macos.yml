@@ -1,0 +1,42 @@
+# Builds the macOS bundles on a real Mac, where codesign is available, so the artifacts are
+# signed (ad hoc) and actually launch on Apple silicon. Run it by hand from the Actions tab,
+# or push a v* tag.
+name: macOS build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: macos-14   # Apple silicon runner
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build bundle
+        run: ./build/macos/build-macos.sh --arch ${{ matrix.arch }}
+
+      - name: Smoke test the signature
+        run: codesign --verify --deep --strict --verbose=2 "artifacts/macos/Spark Photo Downloader.app"
+
+      - name: Pack
+        run: |
+          cd artifacts/macos
+          # ditto keeps the signature, permissions and symlinks intact.
+          ditto -c -k --keepParent "Spark Photo Downloader.app" "SparkPhotoDownloader-macos-${{ matrix.arch }}.zip"
+          mv "Spark Photo Downloader.dmg" "SparkPhotoDownloader-macos-${{ matrix.arch }}.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SparkPhotoDownloader-macos-${{ matrix.arch }}
+          path: |
+            artifacts/macos/SparkPhotoDownloader-macos-${{ matrix.arch }}.zip
+            artifacts/macos/SparkPhotoDownloader-macos-${{ matrix.arch }}.dmg
