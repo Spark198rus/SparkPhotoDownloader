@@ -96,7 +96,7 @@ re-runs the check after you plug it back in.
 
 **Downloading**
 - Copy or move, with a confirmation before a move.
-- Conflicts resolved by unique suffix, skip, or overwrite.
+- Conflicts resolved by skipping the file (the default), a unique suffix, or overwriting.
 - Optional verification: source and destination hashed and compared.
 - Files are written to a `.sparkpart` temporary name and renamed on success, so an
   interrupted run never leaves a half-file that looks complete.
@@ -205,15 +205,15 @@ Each architecture produces two things:
 
 | Artifact | For |
 | --- | --- |
-| `spark-photo-downloader-1.0.0-linux-<arch>.tar.gz` | any distribution; unpack and run `install.sh` |
-| `spark-photo-downloader_1.0.0_<debarch>.deb` | Debian, Ubuntu and derivatives |
+| `spark-photo-downloader-1.0.1-linux-<arch>.tar.gz` | any distribution; unpack and run `install.sh` |
+| `spark-photo-downloader_1.0.1_<debarch>.deb` | Debian, Ubuntu and derivatives |
 
 An AppImage is built as well when `appimagetool` is on `PATH`.
 
 **Portable tarball** — installs per-user without root, or system-wide with `-s`:
 
 ```bash
-tar xzf spark-photo-downloader-1.0.0-linux-x64.tar.gz
+tar xzf spark-photo-downloader-1.0.1-linux-x64.tar.gz
 ./install.sh          # into ~/.local, no root needed
 sudo ./install.sh -s  # into /opt and /usr, for everyone
 ```
@@ -223,7 +223,7 @@ sudo ./install.sh -s  # into /opt and /usr, for everyone
 **Package**:
 
 ```bash
-sudo apt install ./spark-photo-downloader_1.0.0_amd64.deb
+sudo apt install ./spark-photo-downloader_1.0.1_amd64.deb
 ```
 
 It puts the program in `/opt/spark-photo-downloader`, a launcher at

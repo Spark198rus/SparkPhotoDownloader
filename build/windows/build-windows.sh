@@ -23,7 +23,7 @@ done
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROJECT="$ROOT/SparkPhotoDownloader2.csproj"
 OUT="$ROOT/artifacts/windows"
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 mkdir -p "$OUT"
 find "$OUT" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true

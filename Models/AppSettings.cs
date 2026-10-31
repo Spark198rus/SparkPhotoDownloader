@@ -37,7 +37,7 @@ public sealed class AppSettings
 
     // ---- Behaviour ----------------------------------------------------------------------
     public TransferMode TransferMode { get; set; } = TransferMode.Copy;
-    public ConflictResolution ConflictResolution { get; set; } = ConflictResolution.AddUniqueIdentifier;
+    public ConflictResolution ConflictResolution { get; set; } = ConflictResolution.SkipDownload;
 
     /// <summary>Verify each copy by comparing a hash of source and destination.</summary>
     public bool VerifyCopies { get; set; }
