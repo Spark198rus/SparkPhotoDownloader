@@ -31,7 +31,7 @@ OUT="$ROOT/artifacts/linux"
 
 APP_ID="spark-photo-downloader"
 APP_NAME="Spark Photo Downloader"
-VERSION="1.0.0"
+VERSION="1.0.1"
 
 # ---------------------------------------------------------------------------------------
 # A .deb is an ar archive of exactly three members, in order. dpkg-deb and ar are not

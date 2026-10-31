@@ -8,7 +8,7 @@
     <AssemblyName>SparkPhotoDownloader</AssemblyName>
     <RootNamespace>SparkPhotoDownloader</RootNamespace>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
 
     <!-- Desktop memory profile, stated rather than inherited. Server GC would allocate a heap
          per core and inflate resident memory several times over for no benefit here; the
