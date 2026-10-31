@@ -96,7 +96,7 @@ re-runs the check after you plug it back in.
 
 **Downloading**
 - Copy or move, with a confirmation before a move.
-- Conflicts resolved by unique suffix, skip, or overwrite.
+- Conflicts resolved by skipping the file (the default), a unique suffix, or overwriting.
 - Optional verification: source and destination hashed and compared.
 - Files are written to a `.sparkpart` temporary name and renamed on success, so an
   interrupted run never leaves a half-file that looks complete.

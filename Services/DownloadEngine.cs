@@ -15,7 +15,7 @@ public sealed class DownloadRequest
     public NamePreset? VideoRenamePreset { get; init; }
     public string? JobCode { get; init; }
     public TransferMode Mode { get; init; } = TransferMode.Copy;
-    public ConflictResolution Conflict { get; init; } = ConflictResolution.AddUniqueIdentifier;
+    public ConflictResolution Conflict { get; init; } = ConflictResolution.SkipDownload;
     public bool Verify { get; init; }
     public bool BackupEnabled { get; init; }
     public string? PhotoBackupPath { get; init; }
