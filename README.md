@@ -148,12 +148,33 @@ tar records the mode explicitly. Unpack it on the Mac with:
 
 ```bash
 tar xzf SparkPhotoDownloader-macos-arm64.tar.gz
-xattr -dr com.apple.quarantine "Spark Photo Downloader.app"
+xattr -cr "Spark Photo Downloader.app"
 open "Spark Photo Downloader.app"
 ```
 
-The `xattr` line is only needed for an unsigned build; without it Gatekeeper refuses to open
-it. To sign and notarise instead, on a Mac with Xcode command line tools and a Developer ID:
+**The `xattr` line is required.** A downloaded archive carries the quarantine flag, and
+unpacking it — with `tar` or by double-clicking in Finder — passes the flag on to the app.
+On Apple silicon, Gatekeeper reports a quarantined app that has no Developer ID signature as
+**"damaged and can't be opened"**, not as an unidentified developer, and offers no "Open
+Anyway". `xattr -cr` clears the flag and the app starts normally. This is needed for every
+build that is not signed and notarised with a Developer ID.
+
+Every build is also code-signed, at least ad hoc. Apple silicon will not execute arm64 code
+whose bundle carries no valid signature, and then even `xattr` does not help. On a Mac the
+script signs with `codesign`; when cross-compiling it uses
+[`rcodesign`](https://github.com/indygreg/apple-platform-rs), which must be on `PATH`
+(`cargo install apple-codesign`, or a prebuilt release). The script stops before publishing
+if it is missing; `--unsigned` overrides that. `.github/workflows/macos.yml` builds both
+architectures on a GitHub-hosted Mac, if you would rather not cross-compile.
+
+If an older bundle (built before ad-hoc signing was added) still reports itself damaged
+after `xattr -cr`, sign it locally, once:
+
+```bash
+codesign --force --deep --sign - "Spark Photo Downloader.app"
+```
+
+To sign and notarise instead, on a Mac with Xcode command line tools and a Developer ID:
 
 ```bash
 ./build/macos/build-macos.sh --sign "Developer ID Application: Your Name (TEAMID)" \
