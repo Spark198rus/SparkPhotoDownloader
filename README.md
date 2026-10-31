@@ -148,29 +148,33 @@ tar records the mode explicitly. Unpack it on the Mac with:
 
 ```bash
 tar xzf SparkPhotoDownloader-macos-arm64.tar.gz
-xattr -dr com.apple.quarantine "Spark Photo Downloader.app"
+xattr -cr "Spark Photo Downloader.app"
 open "Spark Photo Downloader.app"
 ```
 
-Every build is code-signed, at least ad hoc. Apple silicon will not execute arm64 code that
-carries no signature at all — the process is killed on launch and Finder reports the app as
-**"damaged and can't be opened"**. On a Mac the script signs with `codesign`; when
-cross-compiling it uses [`rcodesign`](https://github.com/indygreg/apple-platform-rs), which
-must be on `PATH` (`cargo install apple-codesign`, or a prebuilt release). The script stops
-before publishing if it is missing; `--unsigned` overrides that.
+**The `xattr` line is required.** A downloaded archive carries the quarantine flag, and
+unpacking it — with `tar` or by double-clicking in Finder — passes the flag on to the app.
+On Apple silicon, Gatekeeper reports a quarantined app that has no Developer ID signature as
+**"damaged and can't be opened"**, not as an unidentified developer, and offers no "Open
+Anyway". `xattr -cr` clears the flag and the app starts normally. This is needed for every
+build that is not signed and notarised with a Developer ID.
 
-An ad-hoc signature is not a Developer ID, so Gatekeeper still blocks the first launch of a
-downloaded copy; the `xattr` line clears the quarantine flag. `.github/workflows/macos.yml`
-builds both architectures on a GitHub-hosted Mac, if you would rather not cross-compile.
+Every build is also code-signed, at least ad hoc. Apple silicon will not execute arm64 code
+whose bundle carries no valid signature, and then even `xattr` does not help. On a Mac the
+script signs with `codesign`; when cross-compiling it uses
+[`rcodesign`](https://github.com/indygreg/apple-platform-rs), which must be on `PATH`
+(`cargo install apple-codesign`, or a prebuilt release). The script stops before publishing
+if it is missing; `--unsigned` overrides that. `.github/workflows/macos.yml` builds both
+architectures on a GitHub-hosted Mac, if you would rather not cross-compile.
 
-**"The app is damaged" on an M1/M2/M3 Mac** — a bundle built before ad-hoc signing was added
-(release 1.0.0 among them) has no signature. Sign it locally, once, after unpacking:
+If an older bundle (built before ad-hoc signing was added) still reports itself damaged
+after `xattr -cr`, sign it locally, once:
 
 ```bash
-xattr -cr "Spark Photo Downloader.app"
 codesign --force --deep --sign - "Spark Photo Downloader.app"
-open "Spark Photo Downloader.app"
-``` To sign and notarise instead, on a Mac with Xcode command line tools and a Developer ID:
+```
+
+To sign and notarise instead, on a Mac with Xcode command line tools and a Developer ID:
 
 ```bash
 ./build/macos/build-macos.sh --sign "Developer ID Application: Your Name (TEAMID)" \

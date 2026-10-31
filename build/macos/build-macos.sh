@@ -192,6 +192,6 @@ else
     echo
     echo "Copy it to the Mac, then:"
     echo "    tar xzf \"$(basename "$TARBALL")\""
-    echo "    xattr -dr com.apple.quarantine \"$APP_NAME.app\"    # not notarised"
+    echo "    xattr -cr \"$APP_NAME.app\"    # required: otherwise macOS calls it damaged"
     echo "    open \"$APP_NAME.app\""
 fi
