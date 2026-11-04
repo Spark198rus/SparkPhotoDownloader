@@ -271,28 +271,11 @@ public sealed partial class DestinationPanelViewModel : ViewModelBase
     /// <summary>Refresh the free-space figures for the chosen folder's volume.</summary>
     public void RefreshDriveSpace()
     {
-        try
-        {
-            var root = Path.GetPathRoot(Path.GetFullPath(FolderPath));
-            if (string.IsNullOrEmpty(root))
-                return;
-
-            var drive = new DriveInfo(root);
-            if (!drive.IsReady)
-            {
-                DriveTotalBytes = 0;
-                DriveFreeBytes = 0;
-                return;
-            }
-
-            DriveTotalBytes = drive.TotalSize;
-            DriveFreeBytes = drive.AvailableFreeSpace;
-        }
-        catch (Exception)
-        {
-            DriveTotalBytes = 0;
-            DriveFreeBytes = 0;
-        }
+        // Measured on the destination folder itself, not on Path.GetPathRoot: on macOS and
+        // Linux that is always "/", which would report the start-up disk for a server share.
+        VolumeInfo.TryGetSpace(FolderPath, out var total, out var free);
+        DriveTotalBytes = total;
+        DriveFreeBytes = free;
     }
 
     /// <summary>

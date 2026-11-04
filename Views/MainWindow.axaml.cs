@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Platform.Storage;
 using SparkPhotoDownloader.Models;
@@ -36,7 +38,58 @@ public partial class MainWindow : Window, IUiServices
                 await _model.InitializeAsync();
         };
 
-        Closing += (_, _) => _model?.Dispose();
+        Closing += OnClosing;
+        Closed += (_, _) => _model?.Dispose();
+
+        AddHandler(KeyDownEvent, OnGridKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>
+    /// On macOS closing the window does not quit the program: the window is hidden, the
+    /// program stays in the Dock with its dot, and clicking the Dock icon brings it back
+    /// (see <see cref="App"/>). Cmd+Q, Quit in the Dock menu, and logging out still quit,
+    /// because those close the window with a shutdown reason rather than as a window close.
+    /// Elsewhere, closing the main window quits, as Windows and Linux users expect.
+    /// </summary>
+    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (OperatingSystem.IsMacOS() && e.CloseReason == WindowCloseReason.WindowClosing &&
+            !e.IsProgrammatic)
+        {
+            e.Cancel = true;
+            Hide();
+        }
+    }
+
+    /// <summary>
+    /// Keyboard for the thumbnail selection: Space checks or unchecks the selected files,
+    /// Cmd/Ctrl+A selects everything shown, Escape clears the selection. Only while the grid
+    /// has focus, so typing in a text box or pressing Space on a button behaves as usual.
+    /// </summary>
+    private void OnGridKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (_model is null || FocusManager?.GetFocusedElement() is not ThumbnailCard)
+            return;
+
+        var command = e.KeyModifiers.HasFlag(KeyModifiers.Meta) || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+
+        switch (e.Key)
+        {
+            case Key.Space when _model.ToggleSelectedCommand.CanExecute(null):
+                _model.ToggleSelectedCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.A when command:
+                _model.SelectAllCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.Escape:
+                _model.ClearSelectionCommand.Execute(null);
+                e.Handled = true;
+                break;
+        }
     }
 
     /// <summary>

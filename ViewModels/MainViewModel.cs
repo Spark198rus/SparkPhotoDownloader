@@ -467,6 +467,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _all.Clear();
         Files.Clear();
         Timeline.Clear();
+        _selectionAnchor = null;
+        SelectedCount = 0;
 
         foreach (var source in AllSources())
             source.ResetCounts();
@@ -693,6 +695,17 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         foreach (var item in ordered)
             Files.Add(item);
 
+        // A file the filter has just hidden must not stay selected: Space or "Check
+        // selected" would otherwise change files the user cannot see.
+        var visible = ordered.ToHashSet();
+        foreach (var file in _all.Where(f => f.IsSelected && !visible.Contains(f)))
+            file.IsSelected = false;
+
+        if (_selectionAnchor is not null && !visible.Contains(_selectionAnchor))
+            _selectionAnchor = null;
+
+        RecountSelected();
+
         OnPropertyChanged(nameof(ShowsFilteredNotice));
     }
 
@@ -847,19 +860,119 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private void CheckAllVideos() =>
         SetChecked(Files.Where(f => f.Kind == FileKind.Video), true);
 
+    /// <summary>
+    /// The context menu acts on the whole selection when the file it was opened on is part
+    /// of it, and on that one file otherwise.
+    /// </summary>
     [RelayCommand]
-    private static void CheckSingle(ThumbnailViewModel? file)
+    private void CheckSingle(ThumbnailViewModel? file) => SetChecked(SelectionOrSingle(file), true);
+
+    [RelayCommand]
+    private void UncheckSingle(ThumbnailViewModel? file) => SetChecked(SelectionOrSingle(file), false);
+
+    private IEnumerable<ThumbnailViewModel> SelectionOrSingle(ThumbnailViewModel? file) =>
+        file is null ? []
+        : file.IsSelected ? Files.Where(f => f.IsSelected)
+        : [file];
+
+    // ---- Selection -----------------------------------------------------------------------
+    //
+    // Selection is separate from the download checkbox: it is what the user has highlighted
+    // with the mouse, and the commands below then check or uncheck all of it at once.
+
+    /// <summary>Where a Shift-click range starts: the last file clicked without Shift.</summary>
+    private ThumbnailViewModel? _selectionAnchor;
+
+    [NotifyCanExecuteChangedFor(nameof(CheckSelectedCommand))]
+    [NotifyCanExecuteChangedFor(nameof(UncheckSelectedCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ToggleSelectedCommand))]
+    [ObservableProperty]
+    public partial int SelectedCount { get; set; }
+
+    public bool HasSelection => SelectedCount > 0;
+
+    partial void OnSelectedCountChanged(int value) => OnPropertyChanged(nameof(HasSelection));
+
+    /// <summary>
+    /// A click on a thumbnail. A plain click selects just that file; <paramref name="toggle"/>
+    /// (Cmd on macOS, Ctrl elsewhere) adds or removes it; <paramref name="range"/> (Shift)
+    /// selects everything between it and the previous click, in the order shown.
+    /// </summary>
+    public void SelectFile(ThumbnailViewModel file, bool toggle, bool range)
     {
-        if (file is not null)
-            file.IsChecked = true;
+        if (range && _selectionAnchor is not null)
+        {
+            var from = Files.IndexOf(_selectionAnchor);
+            var to = Files.IndexOf(file);
+            if (from >= 0 && to >= 0)
+            {
+                if (!toggle)
+                    ClearSelectionCore();
+
+                for (var i = Math.Min(from, to); i <= Math.Max(from, to); i++)
+                    Files[i].IsSelected = true;
+
+                RecountSelected();
+                return;
+            }
+        }
+
+        if (toggle)
+        {
+            file.IsSelected = !file.IsSelected;
+        }
+        else
+        {
+            ClearSelectionCore();
+            file.IsSelected = true;
+        }
+
+        _selectionAnchor = file;
+        RecountSelected();
     }
 
     [RelayCommand]
-    private static void UncheckSingle(ThumbnailViewModel? file)
+    private void SelectAll()
     {
-        if (file is not null)
-            file.IsChecked = false;
+        foreach (var file in Files)
+            file.IsSelected = true;
+
+        _selectionAnchor = Files.FirstOrDefault();
+        RecountSelected();
     }
+
+    [RelayCommand]
+    private void ClearSelection()
+    {
+        ClearSelectionCore();
+        _selectionAnchor = null;
+        RecountSelected();
+    }
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void CheckSelected() => SetChecked(Files.Where(f => f.IsSelected), true);
+
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void UncheckSelected() => SetChecked(Files.Where(f => f.IsSelected), false);
+
+    /// <summary>
+    /// Space: if any selected file is unchecked, check them all; if all are checked, uncheck
+    /// them -- the way Finder and most file managers treat a mixed selection.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private void ToggleSelected()
+    {
+        var selected = Files.Where(f => f.IsSelected).ToList();
+        SetChecked(selected, selected.Any(f => !f.IsChecked));
+    }
+
+    private void ClearSelectionCore()
+    {
+        foreach (var file in _all)
+            file.IsSelected = false;
+    }
+
+    private void RecountSelected() => SelectedCount = Files.Count(f => f.IsSelected);
 
     [RelayCommand]
     private void CheckOnlyNew()
@@ -1233,7 +1346,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 if (byPath.TryGetValue(result.File.FullPath, out var vm))
                 {
                     vm.ApplyDownloadResult(new DownloadFileResultLike(
-                        result.Success, result.DestinationPath, result.Error));
+                        result.Success, result.DestinationPath, result.Error, result.Skipped));
                 }
             });
         }

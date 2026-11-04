@@ -33,15 +33,21 @@
          Green  = downloaded in this session
          Grey   = downloaded before, copy still in place
          Amber  = downloaded before, copy no longer at the destination
-         Red    = failed -->
+         Red    = failed
+         Violet = skipped, a file of that name was already at the destination -->
     <SolidColorBrush x:Key="StateNewBrush" Color="#FF4FA3D1" />
     <SolidColorBrush x:Key="StateDoneBrush" Color="#FF5FB56A" />
     <SolidColorBrush x:Key="StatePreviousBrush" Color="#FF7E7E88" />
     <SolidColorBrush x:Key="StateMissingBrush" Color="#FFE2913A" />
     <SolidColorBrush x:Key="StateFailedBrush" Color="#FFD2544B" />
+    <SolidColorBrush x:Key="StateSkippedBrush" Color="#FF9B7FD4" />
     <SolidColorBrush x:Key="StateMissingGlowBrush" Color="#33E2913A" />
 
     <SolidColorBrush x:Key="SelectionBrush" Color="#FF2F6E9E" />
+    <!-- Highlight on thumbnails picked with click / Shift / Cmd-Ctrl: brighter than the
+         blue "new" border so the two never read as the same thing. -->
+    <SolidColorBrush x:Key="SelectionHighlightBrush" Color="#FFEAF4FF" />
+    <SolidColorBrush x:Key="SelectionWashBrush" Color="#405AA9E6" />
     <SolidColorBrush x:Key="HoverBrush" Color="#FF35353C" />
     <SolidColorBrush x:Key="CapacityTrackBrush" Color="#FF3A3A40" />
 

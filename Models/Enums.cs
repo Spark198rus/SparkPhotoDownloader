@@ -35,6 +35,12 @@ public enum DownloadState
 
     /// <summary>The copy failed during this session.</summary>
     Failed,
+
+    /// <summary>
+    /// Not copied during this session because a file of that name was already at the
+    /// destination and the conflict rule said to leave it.
+    /// </summary>
+    Skipped,
 }
 
 /// <summary>How the thumbnail grid is ordered.</summary>

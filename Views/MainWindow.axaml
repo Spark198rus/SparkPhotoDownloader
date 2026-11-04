@@ -87,8 +87,27 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock Grid.Column="2" Classes="Faint" VerticalAlignment="Center"
-                           Text="{Binding SelectionSummary}" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                    <!-- Acts on the thumbnails highlighted with click, Shift-click and
+                         Cmd/Ctrl-click; Space does the same as a toggle. "Highlighted" rather
+                         than "selected", which already means checked for download here. -->
+                    <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,12,0"
+                                IsVisible="{Binding HasSelection}">
+                        <TextBlock Classes="Subtle" VerticalAlignment="Center"
+                                   Text="{Binding SelectedCount, StringFormat='{}{0} highlighted:'}" />
+                        <Button Classes="Icon" Content="Check"
+                                Command="{Binding CheckSelectedCommand}"
+                                ToolTip.Tip="Check the highlighted files for download (Space toggles)" />
+                        <Button Classes="Icon" Content="Uncheck"
+                                Command="{Binding UncheckSelectedCommand}"
+                                ToolTip.Tip="Uncheck the highlighted files (Space toggles)" />
+                        <Button Classes="Icon" Content="Clear"
+                                Command="{Binding ClearSelectionCommand}"
+                                ToolTip.Tip="Clear the highlight (Esc)" />
+                    </StackPanel>
+                    <TextBlock Classes="Faint" VerticalAlignment="Center"
+                               Text="{Binding SelectionSummary}" />
+                </StackPanel>
             </Grid>
         </Border>
 

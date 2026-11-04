@@ -146,6 +146,12 @@
         <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
     </Style>
 
+    <Style Selector="Border.SelectionOverlay">
+        <Setter Property="BorderBrush" Value="{DynamicResource SelectionHighlightBrush}" />
+        <Setter Property="BorderThickness" Value="3" />
+        <Setter Property="Background" Value="{DynamicResource SelectionWashBrush}" />
+    </Style>
+
     <!-- The little status pill in the corner of a thumbnail. -->
     <Style Selector="Border.StatusBadge">
         <Setter Property="CornerRadius" Value="2" />

@@ -15,7 +15,7 @@ files in the middle, output decisions on the right.
 | Left | Centre | Right |
 | --- | --- | --- |
 | **Devices** — cameras, phones and memory cards, detected automatically, each with a capacity bar | **Thumbnails** — every photo and video found, with a checkbox, a type chip and a status badge | **Photos** — destination folder, subfolder scheme, rename scheme, live example, folder tree |
-| **This Computer** — any folder you add, including its subfolders | Filter (`Show`), sort, thumbnail size, and check All / None / New only / Photos / Videos | **Videos** — the same again, below a splitter |
+| **This Computer** — any folder you add, including its subfolders | Filter (`Show`), sort, thumbnail size, and check All / None / New only / Photos / Videos; highlight several thumbnails to check or uncheck them together | **Videos** — the same again, below a splitter |
 | **Timeline** — shots grouped by the gap between them, from 5 minutes to 24 hours | Live download progress | Job Code, backup, copy/move, and the Download button |
 
 ## Remembering what was downloaded
@@ -36,6 +36,7 @@ On every scan each file is looked up, and the copy it produced is checked:
 | **Downloaded, copy no longer at the destination** | **amber `MISSING`** | **amber border, amber wash, full brightness** | **no** |
 | Downloaded this session | green `DONE` | — | no |
 | Failed this session | red `FAILED` | — | no |
+| Skipped this session (a file of that name was already at the destination) | violet `SKIPPED` | dimmed | no |
 
 A file whose copy was deleted after downloading is **not** downloaded again. It is flagged,
 and it stays flagged:
@@ -279,7 +280,30 @@ Device detection differs by platform, because the operating systems disagree abo
 derives the drive type from the file system name, which never yields `Removable`, so a
 memory card reads as a fixed disk. There, a volume counts as external when it is mounted
 where the desktop mounts removable media: `/Volumes` on macOS, `/media`, `/run/media` and
-`/mnt` on Linux. Kernel and system mounts are filtered out by path and by file system type.
+`/mnt` on Linux. Kernel and system mounts are filtered out by path and by file system type,
+and on macOS so are the APFS system volumes (Recovery, Preboot, VM, Update and the like) and
+anything mounted `nobrowse`, which is what keeps a volume out of Finder.
+
+Free space is measured on the destination folder itself, so a network share or an external
+disk reports its own free space rather than the start-up disk's.
+
+On macOS closing the window leaves the program running in the Dock, as Mac programs do;
+clicking the Dock icon brings the window back, and Cmd+Q quits.
+
+## Selecting thumbnails
+
+Clicking a thumbnail highlights it; Shift-click highlights a range, Cmd-click (Ctrl-click on
+Windows and Linux) adds or removes one. Then:
+
+| Key or button | Does |
+| --- | --- |
+| Space | checks the highlighted files, or unchecks them if they are all checked already |
+| **Check** / **Uncheck** in the status bar | checks or unchecks the highlighted files |
+| Right-click → Check / Uncheck | the same, on the highlighted files when the click is on one |
+| Cmd+A / Ctrl+A | highlights every file shown |
+| Esc, or **Clear** | clears the highlight |
+
+The highlight is separate from the checkbox: it only says which files these commands act on.
 
 ## Licence and attribution
 

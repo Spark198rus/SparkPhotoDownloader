@@ -130,7 +130,9 @@ public sealed partial class ThumbnailViewModel : ViewModelBase
     /// <summary>Record the outcome of a download that just ran.</summary>
     public void ApplyDownloadResult(DownloadFileResultLike result)
     {
-        State = result.Success ? DownloadState.Downloaded : DownloadState.Failed;
+        State = !result.Success ? DownloadState.Failed
+            : result.Skipped ? DownloadState.Skipped
+            : DownloadState.Downloaded;
         LastError = result.Error;
 
         if (result.Success && result.DestinationPath is not null)
@@ -199,6 +201,9 @@ public sealed partial class ThumbnailViewModel : ViewModelBase
                 text.Append("\nJob Code: ").Append(record.JobCode);
         }
 
+        if (State == DownloadState.Skipped)
+            text.Append("\n\nSkipped: a file of that name was already there, so nothing was copied.");
+
         if (!string.IsNullOrWhiteSpace(LastError))
             text.Append("\n\nError: ").Append(LastError);
 
@@ -230,5 +235,6 @@ public sealed partial class ThumbnailViewModel : ViewModelBase
 /// <param name="Success">Whether the file made it to the destination.</param>
 /// <param name="DestinationPath">Where it landed.</param>
 /// <param name="Error">Why it did not, when it did not.</param>
+/// <param name="Skipped">The name was already taken at the destination, so nothing was copied.</param>
 public readonly record struct DownloadFileResultLike(
-    bool Success, string? DestinationPath, string? Error);
+    bool Success, string? DestinationPath, string? Error, bool Skipped = false);
