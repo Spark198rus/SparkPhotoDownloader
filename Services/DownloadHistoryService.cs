@@ -230,7 +230,10 @@ public sealed class DownloadHistoryService : IDisposable
         string root;
         try
         {
-            root = Path.GetPathRoot(Path.GetFullPath(path)) ?? string.Empty;
+            // The mount folder of the volume the copy was written to (/Volumes/Archive), not
+            // Path.GetPathRoot, which is "/" for every path on macOS and Linux and so would
+            // report an unplugged drive as online and its files as deleted.
+            root = VolumeInfo.VolumeKey(Path.GetFullPath(path));
         }
         catch (ArgumentException)
         {
@@ -248,7 +251,7 @@ public sealed class DownloadHistoryService : IDisposable
             bool online;
             try
             {
-                online = root.StartsWith(@"\\", StringComparison.Ordinal)
+                online = !OperatingSystem.IsWindows() || root.StartsWith(@"\\", StringComparison.Ordinal)
                     ? Directory.Exists(root)
                     : new DriveInfo(root).IsReady;
             }

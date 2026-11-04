@@ -13,6 +13,7 @@
 
         <Border.ContextMenu>
             <ContextMenu>
+                <!-- On a selected file these act on the whole selection. -->
                 <MenuItem Header="Check for download"
                           Command="{Binding Owner.CheckSingleCommand}"
                           CommandParameter="{Binding}" />
@@ -61,6 +62,12 @@
                      read as flagged even at a glance across a full screen of thumbnails. -->
                 <Border Background="{DynamicResource StateMissingGlowBrush}"
                         IsVisible="{Binding IsMissingAtDestination}"
+                        IsHitTestVisible="False" />
+
+                <!-- Selection highlight: what a click, Shift-click or Cmd/Ctrl-click picked.
+                     Separate from the checkbox, which decides what is downloaded. -->
+                <Border Classes="SelectionOverlay"
+                        IsVisible="{Binding IsSelected}"
                         IsHitTestVisible="False" />
 
                 <CheckBox IsChecked="{Binding IsChecked}"

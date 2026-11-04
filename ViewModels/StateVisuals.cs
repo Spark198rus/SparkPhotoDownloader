@@ -18,6 +18,7 @@ public static class StateVisuals
         DownloadState.Downloading => "StateNewBrush",
         DownloadState.Downloaded => "StateDoneBrush",
         DownloadState.Failed => "StateFailedBrush",
+        DownloadState.Skipped => "StateSkippedBrush",
         _ => "StateNewBrush",
     });
 
@@ -29,6 +30,7 @@ public static class StateVisuals
         DownloadState.Downloading => "COPYING",
         DownloadState.Downloaded => "DONE",
         DownloadState.Failed => "FAILED",
+        DownloadState.Skipped => "SKIPPED",
         _ => string.Empty,
     };
 
@@ -40,6 +42,7 @@ public static class StateVisuals
     {
         DownloadState.PreviouslyDownloaded => 0.42,
         DownloadState.Failed => 0.6,
+        DownloadState.Skipped => 0.6,
         _ => 1.0,
     };
 
@@ -59,6 +62,7 @@ public static class StateVisuals
         DownloadState.Downloading => "Downloading",
         DownloadState.Downloaded => "Downloaded",
         DownloadState.Failed => "Failed",
+        DownloadState.Skipped => "Skipped: a file of that name was already at the destination",
         _ => state.ToString(),
     };
 

@@ -109,6 +109,11 @@ public sealed class DeviceScanner
         if (systemPrefixes.Any(p => root.StartsWith(p, StringComparison.Ordinal)))
             return true;
 
+        // macOS mounts Recovery, Preboot and friends under /Volumes like any card, and they
+        // would otherwise be listed as removable drives.
+        if (VolumeInfo.IsHiddenMacSystemVolume(root))
+            return true;
+
         string[] pseudoFormats =
         [
             "devfs", "autofs", "sysfs", "proc", "tmpfs", "ramfs", "overlay", "squashfs",
@@ -136,25 +141,9 @@ public sealed class DeviceScanner
     public static DownloadSource CreateFolderSource(string path)
     {
         var full = Path.GetFullPath(path);
-        long total = 0, free = 0;
 
-        try
-        {
-            var root = Path.GetPathRoot(full);
-            if (!string.IsNullOrEmpty(root))
-            {
-                var drive = new DriveInfo(root);
-                if (drive.IsReady)
-                {
-                    total = drive.TotalSize;
-                    free = drive.AvailableFreeSpace;
-                }
-            }
-        }
-        catch (Exception)
-        {
-            // Size is decoration; a folder with unknown capacity is still a valid source.
-        }
+        // Size is decoration; a folder with unknown capacity is still a valid source.
+        VolumeInfo.TryGetSpace(full, out var total, out var free);
 
         return new DownloadSource
         {
