@@ -135,6 +135,11 @@ public sealed class ThumbnailService
             if (FileTypeRegistry.IsDirectlyDecodable(file.Extension))
                 return (TryDecodeFile(file.FullPath, size), ReadOrientation(file.FullPath));
 
+            // Canon CRW is not TIFF-based: its preview is found by walking the CIFF heaps,
+            // never by scanning for JPEG markers (see CiffReader).
+            if (CiffReader.IsCiff(file.Extension))
+                return BuildCiffThumbnail(file, size);
+
             // Raw and HEIF-family files: use the preview the camera embedded.
             var preview = ExtractEmbeddedPreview(
                 file.FullPath, size * PreviewWidthFactor, cancellation);
@@ -145,6 +150,10 @@ public sealed class ThumbnailService
                 if (bitmap is not null)
                     return (bitmap, ReadOrientation(file.FullPath));
             }
+
+            // The THM the camera wrote next to the file, when there is one.
+            if (DecodeThm(file, size) is { } thm)
+                return (thm, ReadOrientation(file.FullPath));
 
             // Some DNGs are plain enough that the normal decoder copes.
             return (TryDecodeFile(file.FullPath, size), ReadOrientation(file.FullPath));
@@ -157,6 +166,37 @@ public sealed class ThumbnailService
         {
             return (null, 1);
         }
+    }
+
+    /// <summary>
+    /// A CRW's own preview, or failing that the THM beside it. The CRW's rotation applies to
+    /// both: neither JPEG is stored turned upright.
+    /// </summary>
+    private static (Bitmap? Bitmap, int Orientation) BuildCiffThumbnail(SourceFile file, int size)
+    {
+        var info = CiffReader.Read(file.FullPath);
+        var orientation = info?.Orientation ?? 1;
+
+        if (info is not null && CiffReader.ReadPreview(file.FullPath, info) is { } jpeg)
+        {
+            using var stream = new MemoryStream(jpeg);
+            if (TryDecodeStream(stream, size) is { } bitmap)
+                return (bitmap, orientation);
+        }
+
+        return (DecodeThm(file, size), orientation);
+    }
+
+    /// <summary>
+    /// Decode the THM sidecar: a small JPEG (160×120 on Canon bodies) cameras of the CRW era
+    /// write beside each raw file and video.
+    /// </summary>
+    private static Bitmap? DecodeThm(SourceFile file, int size)
+    {
+        var thm = file.Sidecars.FirstOrDefault(s =>
+            string.Equals(Path.GetExtension(s), ".thm", StringComparison.OrdinalIgnoreCase));
+
+        return thm is null ? null : TryDecodeFile(thm, size);
     }
 
     // -------------------------------------------------------------------------------------
@@ -614,6 +654,11 @@ public sealed class ThumbnailService
     private string CachePath(SourceFile file, int size)
     {
         var key = $"{file.FullPath}|{file.ModifiedUtc.Ticks}|{file.Size}|{size}";
+
+        // CRW thumbnails made before CiffReader came from the generic marker scan and are
+        // grey sensor noise. A new key makes every CRW build afresh instead of reusing them.
+        if (CiffReader.IsCiff(file.Extension))
+            key = "ciff1|" + key;
         var hash = Convert.ToHexString(MD5.HashData(Encoding.UTF8.GetBytes(key)));
         return Path.Combine(_cacheDirectory, hash + ".png");
     }

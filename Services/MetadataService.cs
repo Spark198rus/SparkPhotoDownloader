@@ -44,6 +44,9 @@ public sealed class MetadataService
 
     private FileMetadata ReadUncached(SourceFile file)
     {
+        if (CiffReader.IsCiff(file.Extension))
+            return ReadCiff(file);
+
         try
         {
             var directories = ImageMetadataReader.ReadMetadata(file.FullPath);
@@ -56,6 +59,52 @@ public sealed class MetadataService
             // Unsupported or damaged files fall back to what the file system knows.
             return FileMetadata.Empty;
         }
+    }
+
+    /// <summary>
+    /// CRW metadata from the file's own CIFF records. The capture time, make and model are
+    /// there; exposure details are in the THM's Exif, which is read for whatever the CRW
+    /// lacks.
+    /// </summary>
+    private static FileMetadata ReadCiff(SourceFile file)
+    {
+        var ciff = CiffReader.Read(file.FullPath);
+
+        FileMetadata thm = FileMetadata.Empty;
+        var thmPath = file.Sidecars.FirstOrDefault(s =>
+            string.Equals(Path.GetExtension(s), ".thm", StringComparison.OrdinalIgnoreCase));
+
+        if (thmPath is not null)
+        {
+            try
+            {
+                thm = ReadPhoto(ImageMetadataReader.ReadMetadata(thmPath), file);
+            }
+            catch (Exception)
+            {
+                // A damaged THM costs only the exposure details.
+            }
+        }
+
+        if (ciff is null)
+            return thm;
+
+        return new FileMetadata
+        {
+            CaptureDate = ciff.CaptureDate ?? thm.CaptureDate,
+            CameraMake = ciff.Make ?? thm.CameraMake,
+            CameraModel = ciff.Model ?? thm.CameraModel,
+            SerialNumber = thm.SerialNumber,
+            LensModel = thm.LensModel,
+            Aperture = thm.Aperture,
+            Iso = thm.Iso,
+            ExposureTime = thm.ExposureTime,
+            FocalLength = thm.FocalLength,
+            Width = ciff.Width ?? thm.Width,
+            Height = ciff.Height ?? thm.Height,
+            Orientation = ciff.Orientation,
+            ShutterCount = thm.ShutterCount,
+        };
     }
 
     private static FileMetadata ReadPhoto(IReadOnlyList<MetaDirectory> directories, SourceFile file)
