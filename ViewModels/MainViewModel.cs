@@ -748,6 +748,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (_suppressRecount)
             return;
 
+        // Every file that finishes downloading is unchecked. Recounting then rebuilds both
+        // destination previews -- free space, a planned folder tree, a listing of the
+        // destination two levels deep -- on the UI thread, which on a network share is slow
+        // enough to freeze the window once per file. The download recounts once when it ends.
+        if (IsDownloading)
+            return;
+
         RecountChecked();
     }
 
@@ -1330,8 +1337,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         foreach (var file in files)
             file.State = DownloadState.Downloading;
 
+        // Two reports arrive per file. With thousands of small files that is more redraws than
+        // the window can keep up with, so the bar and text update at most ten times a second,
+        // plus the final report.
+        var lastProgressUpdate = DateTime.MinValue;
+
         var progress = new Progress<DownloadProgress>(p =>
         {
+            var now = DateTime.UtcNow;
+            if (p.Completed < p.Total && now - lastProgressUpdate < TimeSpan.FromMilliseconds(100))
+                return;
+
+            lastProgressUpdate = now;
+
             Progress = p.BytesTotal > 0 ? p.BytesDone * 100.0 / p.BytesTotal : 0;
             ProgressText =
                 $"{p.Completed:N0} of {p.Total:N0}  ·  " +
