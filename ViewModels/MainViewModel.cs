@@ -52,6 +52,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _history = new DownloadHistoryService(AppPaths.HistoryDatabase);
         _metadata = new MetadataService();
         _thumbnails = new ThumbnailService(Settings);
+
+        // One read of a phone file's first bytes serves both its date and its rotation.
+        _thumbnails.DeviceOrientation = file => _metadata.Read(file).Orientation;
         _deviceScanner = new DeviceScanner(Settings);
         _fileScanner = new FileScanner();
         _engine = new DownloadEngine(_metadata, _history, _settingsService);
@@ -499,6 +502,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         try
         {
+            if (source.Source.DeviceId is not null)
+            {
+                await ScanDeviceSourceAsync(source, progress, token);
+                return;
+            }
+
             var found = await Task.Run(
                 () => _fileScanner.Scan(source.Source, progress, token), token);
 
@@ -513,16 +522,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 })
                 .ToList(), token);
 
-            foreach (var (file, lookup, date) in built)
-            {
-                var vm = new ThumbnailViewModel(file, lookup, date, OnFileCheckedChanged) { Owner = this };
-                vm.IsChecked = source.IsChecked && ShouldCheckByDefault(vm);
-                _all.Add(vm);
-            }
-
-            source.PhotoCount = built.Count(b => b.file.Kind == FileKind.Photo);
-            source.VideoCount = built.Count(b => b.file.Kind == FileKind.Video);
-            source.FileCount = built.Count;
+            AddScannedFiles(source, built);
+            UpdateSourceCounts(source);
 
             Rebuild();
             StatusText = $"{source.Name}: {built.Count:N0} files found";
@@ -568,6 +569,103 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     // ---- Thumbnails ----------------------------------------------------------------------
+
+    private void AddScannedFiles(
+        SourceViewModel source, IEnumerable<(SourceFile File, HistoryLookup Lookup, DateTime Date)> files)
+    {
+        foreach (var (file, lookup, date) in files)
+        {
+            var vm = new ThumbnailViewModel(file, lookup, date, OnFileCheckedChanged) { Owner = this };
+            vm.IsChecked = source.IsChecked && ShouldCheckByDefault(vm);
+            _all.Add(vm);
+        }
+    }
+
+    private void UpdateSourceCounts(SourceViewModel source)
+    {
+        var files = _all.Where(f => f.File.SourceId == source.Id).ToList();
+        source.PhotoCount = files.Count(f => f.Kind == FileKind.Photo);
+        source.VideoCount = files.Count(f => f.Kind == FileKind.Video);
+        source.FileCount = files.Count;
+    }
+
+    /// <summary>
+    /// A phone or camera over MTP/PTP. Every read is a request over USB, so nothing waits for
+    /// metadata: cards appear in batches while the device is still being walked, dated by the
+    /// modification time the device reports, and previews fill in afterwards in the order
+    /// shown. Reading a preview also reads the file's Exif, so once the previews are done the
+    /// capture dates are known and the grid and Timeline are re-sorted by them, once.
+    /// </summary>
+    private async Task ScanDeviceSourceAsync(
+        SourceViewModel source, IProgress<ScanProgress> progress, CancellationToken token)
+    {
+        void OnBatch(IReadOnlyList<SourceFile> batch)
+        {
+            // History lookups are local SQLite queries; the device is not touched here.
+            var built = batch
+                .Select(file => (file, _history.Lookup(file.Identity), file.ModifiedUtc.ToLocalTime()))
+                .ToList();
+
+            // Invoke, not Post: the batches must all be in before the scan is reported done.
+            Dispatcher.UIThread.Invoke(() =>
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
+                AddScannedFiles(source, built);
+                UpdateSourceCounts(source);
+                Rebuild();
+            });
+        }
+
+        var found = await Task.Run(
+            () => _fileScanner.Scan(source.Source, progress, token, OnBatch), token);
+
+        UpdateSourceCounts(source);
+        StatusText = $"{source.Name}: {found.Count:N0} files found";
+
+        _ = LoadThumbnailsThenDatesAsync(source.Id, token);
+    }
+
+    private async Task LoadThumbnailsThenDatesAsync(string sourceId, CancellationToken token)
+    {
+        await LoadThumbnailsAsync(token);
+
+        if (token.IsCancellationRequested)
+            return;
+
+        var items = _all.Where(f => f.File.SourceId == sourceId).ToList();
+
+        try
+        {
+            // Mostly answered from the cache the previews filled; files whose preview came from
+            // the on-disk cache are read now, in the background.
+            var dates = await Task.Run(
+                () => items.Select(item =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    return _metadata.EffectiveDate(item.File);
+                }).ToList(),
+                token);
+
+            var changed = false;
+            for (var i = 0; i < items.Count; i++)
+            {
+                if (items[i].EffectiveDate != dates[i])
+                {
+                    items[i].EffectiveDate = dates[i];
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                Rebuild();
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a rescan.
+        }
+    }
 
     private async Task LoadThumbnailsAsync(CancellationToken token)
     {

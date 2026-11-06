@@ -35,6 +35,13 @@ public sealed class MetadataService
         return metadata;
     }
 
+    /// <summary>Metadata already read this session, without reading anything.</summary>
+    public FileMetadata? TryGetCached(SourceFile file)
+    {
+        lock (_gate)
+            return _cache.GetValueOrDefault(file.FullPath + "|" + file.ModifiedUtc.Ticks);
+    }
+
     /// <summary>The date used for naming and grouping: capture date, or mtime when absent.</summary>
     public DateTime EffectiveDate(SourceFile file)
     {

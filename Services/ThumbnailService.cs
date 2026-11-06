@@ -71,6 +71,13 @@ public sealed class ThumbnailService
     public bool FfmpegAvailable => _ffmpeg.Value is not null;
 
     /// <summary>
+    /// Supplies the Exif orientation of a file on a phone. Set to the metadata service's
+    /// cached reader so that one read of the file's first bytes serves both the date and the
+    /// rotation; each read is a separate request over USB.
+    /// </summary>
+    public Func<SourceFile, int>? DeviceOrientation { get; set; }
+
+    /// <summary>
     /// Load or build the thumbnail for a file. Returns null when no preview can be produced,
     /// in which case the UI shows a type placeholder instead.
     /// </summary>
@@ -178,18 +185,18 @@ public sealed class ThumbnailService
     /// Orientation comes from the Exif block at the start of the file, since neither the
     /// device thumbnail nor the decoded picture is stored upright.
     /// </summary>
-    private static (Bitmap? Bitmap, int Orientation) BuildDeviceThumbnail(
+    private (Bitmap? Bitmap, int Orientation) BuildDeviceThumbnail(
         SourceFile file, int size, CancellationToken cancellation)
     {
         var device = file.DeviceId!;
         var path = file.DevicePath!;
 
         int Orientation() =>
-            file.Kind == FileKind.Video
-                ? 1
-                : PortableDevices.ReadHead(device, path, DeviceHeadBytes) is { } head
-                    ? ReadOrientation(new MemoryStream(head))
-                    : 1;
+            file.Kind == FileKind.Video ? 1
+            : DeviceOrientation is { } provider ? provider(file)
+            : PortableDevices.ReadHead(device, path, DeviceHeadBytes) is { } head
+                ? ReadOrientation(new MemoryStream(head))
+                : 1;
 
         Bitmap? small = null;
         if (PortableDevices.ReadThumbnail(device, path) is { } thumbnail)

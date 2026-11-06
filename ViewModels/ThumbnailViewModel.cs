@@ -36,8 +36,24 @@ public sealed partial class ThumbnailViewModel : ViewModelBase
 
     public DestinationStatus DestinationStatus { get; private set; }
 
-    /// <summary>Capture date when known, modification time otherwise. Drives sorting and the Timeline.</summary>
-    public DateTime EffectiveDate { get; }
+    /// <summary>
+    /// Capture date when known, modification time otherwise. Drives sorting and the Timeline.
+    /// A file on a phone starts with its modification time and gets its capture date once
+    /// the Exif has been read in the background.
+    /// </summary>
+    public DateTime EffectiveDate
+    {
+        get;
+        set
+        {
+            if (field == value)
+                return;
+
+            field = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(DateText));
+        }
+    }
 
     public string FileName => File.FileName;
 
