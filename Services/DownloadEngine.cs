@@ -251,7 +251,7 @@ public sealed class DownloadEngine
             if (alreadyThere && request.Conflict == ConflictResolution.AddUniqueIdentifier)
                 target = MakeUnique(target);
 
-            CopyFile(file.FullPath, target, request.Verify, cancellation);
+            CopyFile(() => SourceAccess.OpenRead(file), file.ModifiedUtc, target, request.Verify, cancellation);
 
             var backups = CopySidecarsAndBackups(file, target, request, cancellation);
 
@@ -333,8 +333,10 @@ public sealed class DownloadEngine
 
             Directory.CreateDirectory(Path.GetDirectoryName(backupTarget)!);
 
+            // A file on a phone is copied from the fresh primary copy rather than pulled over
+            // USB a second time.
             if (!File.Exists(backupTarget))
-                CopyFile(file.FullPath, backupTarget, verify: false, cancellation);
+                CopyFile(file.IsOnDevice ? target : file.FullPath, backupTarget, verify: false, cancellation);
 
             return backupTarget;
         }
@@ -349,7 +351,17 @@ public sealed class DownloadEngine
     /// leaves a half-written file that looks complete.
     /// </summary>
     private static void CopyFile(
-        string source, string target, bool verify, CancellationToken cancellation)
+        string source, string target, bool verify, CancellationToken cancellation) =>
+        CopyFile(
+            () => new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16,
+                FileOptions.SequentialScan),
+            File.GetLastWriteTimeUtc(source), target, verify, cancellation);
+
+    /// <param name="openSource">Opens the original: a file on disk, or one on a phone.</param>
+    /// <param name="modifiedUtc">Modification time to give the copy.</param>
+    private static void CopyFile(
+        Func<Stream> openSource, DateTime modifiedUtc, string target, bool verify,
+        CancellationToken cancellation)
     {
         var temporary = target + ".sparkpart";
 
@@ -357,9 +369,7 @@ public sealed class DownloadEngine
         {
             byte[]? sourceHash;
 
-            using (var input = new FileStream(
-                       source, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16,
-                       FileOptions.SequentialScan))
+            using (var input = openSource())
             using (var output = new FileStream(
                        temporary, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16,
                        FileOptions.SequentialScan))
@@ -367,7 +377,7 @@ public sealed class DownloadEngine
                 sourceHash = CopyStream(input, output, verify, cancellation);
             }
 
-            File.SetLastWriteTimeUtc(temporary, File.GetLastWriteTimeUtc(source));
+            File.SetLastWriteTimeUtc(temporary, modifiedUtc);
 
             if (verify && sourceHash is not null)
             {
@@ -376,7 +386,7 @@ public sealed class DownloadEngine
                 {
                     File.Delete(temporary);
                     throw new IOException(
-                        $"Verification failed: the copy of {Path.GetFileName(source)} does not " +
+                        $"Verification failed: the copy of {Path.GetFileName(target)} does not " +
                         "match the original.");
                 }
             }
@@ -442,7 +452,10 @@ public sealed class DownloadEngine
     {
         try
         {
-            File.Delete(file.FullPath);
+            if (file is { DeviceId: { } device, DevicePath: { } path })
+                PortableDevices.Delete(device, path);
+            else
+                File.Delete(file.FullPath);
         }
         catch (Exception)
         {

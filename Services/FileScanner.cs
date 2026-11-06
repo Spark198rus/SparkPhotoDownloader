@@ -30,6 +30,9 @@ public sealed class FileScanner
         IProgress<ScanProgress>? progress = null,
         CancellationToken cancellation = default)
     {
+        if (source.DeviceId is { } deviceId)
+            return ScanDevice(source, deviceId, progress, cancellation);
+
         var found = new List<SourceFile>();
         var sidecars = new List<(string Path, string Folder, string BaseName)>();
 
@@ -105,6 +108,44 @@ public sealed class FileScanner
         }
 
         AttachSidecars(found, sidecars);
+        progress?.Report(new ScanProgress(source.Name, found.Count, string.Empty));
+        return found;
+    }
+
+    /// <summary>A phone or camera over MTP/PTP, read through <see cref="PortableDevices"/>.</summary>
+    private static IReadOnlyList<SourceFile> ScanDevice(
+        DownloadSource source, string deviceId,
+        IProgress<ScanProgress>? progress, CancellationToken cancellation)
+    {
+        var found = new List<SourceFile>();
+        var lastReport = DateTime.UtcNow;
+
+        foreach (var media in PortableDevices.EnumerateMedia(deviceId, cancellation))
+        {
+            var extension = FileTypeRegistry.NormalizeExtension(media.Name);
+
+            found.Add(new SourceFile
+            {
+                FullPath = source.Name + media.DevicePath,
+                DeviceId = deviceId,
+                DevicePath = media.DevicePath,
+                FileName = media.Name,
+                Extension = extension,
+                Size = media.Size,
+                ModifiedUtc = media.ModifiedUtc,
+                Kind = FileTypeRegistry.Classify(extension),
+                SourceId = source.Id,
+                SourceName = source.Name,
+                RelativeFolder = media.DisplayFolder,
+            });
+
+            if (progress is not null && DateTime.UtcNow - lastReport > TimeSpan.FromMilliseconds(120))
+            {
+                lastReport = DateTime.UtcNow;
+                progress.Report(new ScanProgress(source.Name, found.Count, media.DisplayFolder));
+            }
+        }
+
         progress?.Report(new ScanProgress(source.Name, found.Count, string.Empty));
         return found;
     }

@@ -68,6 +68,11 @@ re-runs the check after you plug it back in.
 - Removable volumes detected automatically and polled every three seconds, classified by the
   camera folders they carry (`DCIM`, `AVCHD`, `PRIVATE`, `M4ROOT`, `XDROOT`, …).
 - Capacity bar, file-system type and photo/video counts per source.
+- **Phones and cameras over USB on Windows**, in either *File transfer* (MTP) or PTP mode,
+  through Windows Portable Devices: the `DCIM`, `Pictures` and `Movies` folders of each
+  storage are read. Unlock the phone and allow access to its data when it asks. Not yet on
+  macOS or Linux — there, copy the pictures off with Image Capture or the file manager and
+  add the folder.
 - Any folder can be added as a source through *This Computer*; subfolders are included.
 - Checking a source checks everything found on it — except files already downloaded.
 
@@ -289,6 +294,10 @@ disk reports its own free space rather than the start-up disk's.
 
 On macOS closing the window leaves the program running in the Dock, as Mac programs do;
 clicking the Dock icon brings the window back, and Cmd+Q quits.
+
+The Windows build targets `net10.0-windows` (it carries the MediaDevices library for MTP/PTP
+devices); the macOS and Linux builds target plain `net10.0`. The project picks the target from
+the runtime being published for, so the build scripts need no changes.
 
 ## Selecting thumbnails
 

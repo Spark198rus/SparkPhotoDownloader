@@ -129,6 +129,9 @@ public sealed class ThumbnailService
     {
         try
         {
+            if (file.IsOnDevice)
+                return BuildDeviceThumbnail(file, size, cancellation);
+
             if (file.Kind == FileKind.Video)
                 return (BuildVideoThumbnail(file, size, cancellation), 1);
 
@@ -167,6 +170,69 @@ public sealed class ThumbnailService
             return (null, 1);
         }
     }
+
+    /// <summary>
+    /// A file on a phone or camera over MTP/PTP. Everything comes over USB, one request at a
+    /// time, so the cheapest source wins: the thumbnail the device keeps, when it is big
+    /// enough for the grid; otherwise the whole file, for formats that decode directly.
+    /// Orientation comes from the Exif block at the start of the file, since neither the
+    /// device thumbnail nor the decoded picture is stored upright.
+    /// </summary>
+    private static (Bitmap? Bitmap, int Orientation) BuildDeviceThumbnail(
+        SourceFile file, int size, CancellationToken cancellation)
+    {
+        var device = file.DeviceId!;
+        var path = file.DevicePath!;
+
+        int Orientation() =>
+            file.Kind == FileKind.Video
+                ? 1
+                : PortableDevices.ReadHead(device, path, DeviceHeadBytes) is { } head
+                    ? ReadOrientation(new MemoryStream(head))
+                    : 1;
+
+        Bitmap? small = null;
+        if (PortableDevices.ReadThumbnail(device, path) is { } thumbnail)
+        {
+            small = TryDecodeStream(new MemoryStream(thumbnail), null);
+
+            // A thumbnail at least three quarters of the cell width looks fine; smaller ones
+            // are kept in reserve in case the full file cannot be decoded either.
+            if (small is not null && small.PixelSize.Width * 4 >= size * 3)
+                return (small, Orientation());
+        }
+
+        cancellation.ThrowIfCancellationRequested();
+
+        if (file.Kind != FileKind.Video && FileTypeRegistry.IsDirectlyDecodable(file.Extension))
+        {
+            try
+            {
+                using var source = SourceAccess.OpenRead(file);
+                using var memory = new MemoryStream();
+                source.CopyTo(memory);
+
+                memory.Position = 0;
+                var orientation = ReadOrientation(memory);
+
+                memory.Position = 0;
+                if (TryDecodeStream(memory, size) is { } bitmap)
+                {
+                    small?.Dispose();
+                    return (bitmap, orientation);
+                }
+            }
+            catch (IOException)
+            {
+                // Unplugged or locked by the phone; fall back to whatever we have.
+            }
+        }
+
+        return (small, small is null ? 1 : Orientation());
+    }
+
+    /// <summary>Bytes read from the start of a device file to find its Exif orientation.</summary>
+    private const int DeviceHeadBytes = 128 * 1024;
 
     /// <summary>
     /// A CRW's own preview, or failing that the THM beside it. The CRW's rotation applies to
@@ -584,7 +650,31 @@ public sealed class ThumbnailService
     {
         try
         {
-            var directories = ImageMetadataReader.ReadMetadata(path);
+            return OrientationOf(ImageMetadataReader.ReadMetadata(path));
+        }
+        catch (Exception)
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>Exif orientation read from a stream, or 1 when it has none.</summary>
+    private static int ReadOrientation(Stream stream)
+    {
+        try
+        {
+            return OrientationOf(ImageMetadataReader.ReadMetadata(stream));
+        }
+        catch (Exception)
+        {
+            return 1;
+        }
+    }
+
+    private static int OrientationOf(IReadOnlyList<MetadataExtractor.Directory> directories)
+    {
+        try
+        {
             foreach (var directory in directories.OfType<ExifIfd0Directory>())
             {
                 if (directory.TryGetInt32(ExifDirectoryBase.TagOrientation, out var value))

@@ -1082,7 +1082,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void RevealFile(ThumbnailViewModel? file)
     {
-        if (file is not null)
+        // A file on a phone has no path a file manager can open.
+        if (file is not null && !file.File.IsOnDevice)
             Ui.RevealInFileManager(file.File.FullPath);
     }
 

@@ -80,6 +80,13 @@ public sealed class DeviceScanner
             });
         }
 
+        // Phones and cameras over MTP/PTP have no mount point (Windows only, for now).
+        foreach (var device in PortableDevices.ListDevices())
+        {
+            if (!_settings.IgnoredDevices.Contains(device.RootPath, StringComparer.OrdinalIgnoreCase))
+                results.Add(device);
+        }
+
         return results;
     }
 

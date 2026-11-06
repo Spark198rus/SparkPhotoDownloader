@@ -25,6 +25,20 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**;build\**</DefaultItemExcludes>
   </PropertyGroup>
 
+  <!-- Windows builds target net10.0-windows, which brings in the MediaDevices library for
+       phones and cameras connected over MTP or PTP (Windows Portable Devices); other builds
+       stay on plain net10.0. The switch follows the runtime being published for, or the host
+       for a plain build, and compiles the phone code under #if WINDOWS. EnableWindowsTargeting
+       lets the Windows build be cross-compiled from Linux and macOS. -->
+  <PropertyGroup Condition="('$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win'))) or ('$(RuntimeIdentifier)' == '' and '$(OS)' == 'Windows_NT')">
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0-windows'">
+    <PackageReference Include="MediaDevices" Version="2.0.0" />
+  </ItemGroup>
+
   <!-- The manifest, the .ico and COM interop are Windows-only. Applying them to a macOS or
        Linux publish is at best ignored and at worst an error, so they are scoped to the
        Windows runtime identifiers (and to a plain build, which targets the host). -->

@@ -9,6 +9,12 @@ public sealed class DownloadSource
     public required string Id { get; init; }
     public required string Name { get; init; }
     public required string RootPath { get; init; }
+
+    /// <summary>
+    /// Set for a phone or camera connected over MTP/PTP, which has no mount point:
+    /// <see cref="RootPath"/> is then only a label.
+    /// </summary>
+    public string? DeviceId { get; init; }
     public required DeviceKind Kind { get; init; }
 
     /// <summary>True when a DCIM (or similar) folder marks this volume as camera media.</summary>

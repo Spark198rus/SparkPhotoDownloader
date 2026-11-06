@@ -6,7 +6,20 @@ namespace SparkPhotoDownloader.Models;
 /// </summary>
 public sealed class SourceFile
 {
+    /// <summary>
+    /// Where the file is. For a file on a phone or camera connected over MTP/PTP this is a
+    /// display path ("Pixel 8\Internal shared storage\DCIM\Camera\IMG_1.jpg") that is
+    /// unique but cannot be opened; read any file through Services.SourceAccess.
+    /// </summary>
     public required string FullPath { get; init; }
+
+    /// <summary>The portable device the file is on, or null for a file on a mounted volume.</summary>
+    public string? DeviceId { get; init; }
+
+    /// <summary>The file's path on <see cref="DeviceId"/>, as the device names it.</summary>
+    public string? DevicePath { get; init; }
+
+    public bool IsOnDevice => DeviceId is not null;
     public required string FileName { get; init; }
 
     /// <summary>Lower-case extension without the dot.</summary>

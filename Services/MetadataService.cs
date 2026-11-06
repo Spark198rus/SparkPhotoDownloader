@@ -44,6 +44,9 @@ public sealed class MetadataService
 
     private FileMetadata ReadUncached(SourceFile file)
     {
+        if (file.IsOnDevice)
+            return ReadFromDevice(file);
+
         if (CiffReader.IsCiff(file.Extension))
             return ReadCiff(file);
 
@@ -57,6 +60,34 @@ public sealed class MetadataService
         catch (Exception)
         {
             // Unsupported or damaged files fall back to what the file system knows.
+            return FileMetadata.Empty;
+        }
+    }
+
+    /// <summary>Bytes read from the start of a device file for its metadata.</summary>
+    private const int DeviceHeadBytes = 128 * 1024;
+
+    /// <summary>
+    /// A file on a phone or camera over MTP/PTP. Only the start of the file is read: the Exif
+    /// block of a JPEG or HEIC sits there, and pulling every whole picture over USB just to
+    /// date it would make scanning a phone take minutes. Videos keep their index at the end
+    /// as often as not, so they are dated by the device's modification time instead.
+    /// </summary>
+    private static FileMetadata ReadFromDevice(SourceFile file)
+    {
+        if (file.Kind != FileKind.Photo)
+            return FileMetadata.Empty;
+
+        var head = PortableDevices.ReadHead(file.DeviceId!, file.DevicePath!, DeviceHeadBytes);
+        if (head is null)
+            return FileMetadata.Empty;
+
+        try
+        {
+            return ReadPhoto(ImageMetadataReader.ReadMetadata(new MemoryStream(head)), file);
+        }
+        catch (Exception)
+        {
             return FileMetadata.Empty;
         }
     }
