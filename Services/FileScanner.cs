@@ -25,18 +25,13 @@ public sealed class FileScanner
     /// Scan one source. Runs on a background thread; report progress through
     /// <paramref name="progress"/> and stop early through <paramref name="cancellation"/>.
     /// </summary>
-    /// <param name="onBatch">
-    /// For a phone, called with each batch of files as they are found, so the grid can fill
-    /// while a slow USB walk is still going. The full list is still returned at the end.
-    /// </param>
     public IReadOnlyList<SourceFile> Scan(
         DownloadSource source,
         IProgress<ScanProgress>? progress = null,
-        CancellationToken cancellation = default,
-        Action<IReadOnlyList<SourceFile>>? onBatch = null)
+        CancellationToken cancellation = default)
     {
         if (source.DeviceId is { } deviceId)
-            return ScanDevice(source, deviceId, progress, cancellation, onBatch);
+            return ScanDevice(source, deviceId, progress, cancellation);
 
         var found = new List<SourceFile>();
         var sidecars = new List<(string Path, string Folder, string BaseName)>();
@@ -120,23 +115,10 @@ public sealed class FileScanner
     /// <summary>A phone or camera over MTP/PTP, read through <see cref="PortableDevices"/>.</summary>
     private static IReadOnlyList<SourceFile> ScanDevice(
         DownloadSource source, string deviceId,
-        IProgress<ScanProgress>? progress, CancellationToken cancellation,
-        Action<IReadOnlyList<SourceFile>>? onBatch)
+        IProgress<ScanProgress>? progress, CancellationToken cancellation)
     {
         var found = new List<SourceFile>();
         var lastReport = DateTime.UtcNow;
-        var batchStart = 0;
-        var lastBatch = DateTime.UtcNow;
-
-        void Flush()
-        {
-            if (onBatch is null || batchStart == found.Count)
-                return;
-
-            onBatch(found.GetRange(batchStart, found.Count - batchStart));
-            batchStart = found.Count;
-            lastBatch = DateTime.UtcNow;
-        }
 
         foreach (var media in PortableDevices.EnumerateMedia(deviceId, cancellation))
         {
@@ -162,12 +144,8 @@ public sealed class FileScanner
                 lastReport = DateTime.UtcNow;
                 progress.Report(new ScanProgress(source.Name, found.Count, media.DisplayFolder));
             }
-
-            if (DateTime.UtcNow - lastBatch > TimeSpan.FromMilliseconds(400))
-                Flush();
         }
 
-        Flush();
         progress?.Report(new ScanProgress(source.Name, found.Count, string.Empty));
         return found;
     }

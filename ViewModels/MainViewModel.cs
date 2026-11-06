@@ -590,38 +590,35 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// A phone or camera over MTP/PTP. Every read is a request over USB, so nothing waits for
-    /// metadata: cards appear in batches while the device is still being walked, dated by the
-    /// modification time the device reports, and previews fill in afterwards in the order
-    /// shown. Reading a preview also reads the file's Exif, so once the previews are done the
-    /// capture dates are known and the grid and Timeline are re-sorted by them, once.
+    /// A phone or camera over MTP/PTP. Every read is a request over USB, so the grid does not
+    /// wait for metadata: the device is walked first, then the whole grid is shown at once,
+    /// dated by the modification time the device reports, and previews fill in afterwards in
+    /// the order shown. Reading a preview also reads the file's Exif, so once the previews
+    /// are done the capture dates are known and the grid and Timeline are re-sorted, once.
     /// </summary>
+    /// <remarks>
+    /// Adding cards in batches while the walk was running looked faster but was not: every
+    /// batch rebuilt the whole grid and both destination previews on the UI thread, and the
+    /// window stuttered through the entire scan.
+    /// </remarks>
     private async Task ScanDeviceSourceAsync(
         SourceViewModel source, IProgress<ScanProgress> progress, CancellationToken token)
     {
-        void OnBatch(IReadOnlyList<SourceFile> batch)
-        {
-            // History lookups are local SQLite queries; the device is not touched here.
-            var built = batch
-                .Select(file => (file, _history.Lookup(file.Identity), file.ModifiedUtc.ToLocalTime()))
-                .ToList();
-
-            // Invoke, not Post: the batches must all be in before the scan is reported done.
-            Dispatcher.UIThread.Invoke(() =>
-            {
-                if (token.IsCancellationRequested)
-                    return;
-
-                AddScannedFiles(source, built);
-                UpdateSourceCounts(source);
-                Rebuild();
-            });
-        }
-
         var found = await Task.Run(
-            () => _fileScanner.Scan(source.Source, progress, token, OnBatch), token);
+            () => _fileScanner.Scan(source.Source, progress, token), token);
 
+        // History lookups are local SQLite queries; the device is not touched here.
+        var built = await Task.Run(() => found
+            .Select(file =>
+            {
+                token.ThrowIfCancellationRequested();
+                return (file, _history.Lookup(file.Identity), file.ModifiedUtc.ToLocalTime());
+            })
+            .ToList(), token);
+
+        AddScannedFiles(source, built);
         UpdateSourceCounts(source);
+        Rebuild();
         StatusText = $"{source.Name}: {found.Count:N0} files found";
 
         _ = LoadThumbnailsThenDatesAsync(source.Id, token);
@@ -689,9 +686,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         if (pending.Count == 0)
             return;
 
+        // A phone answers one USB request at a time, so more than two loaders only queue up
+        // there while still competing for the CPU to decode; cards and folders use the cores.
         var options = new ParallelOptions
         {
-            MaxDegreeOfParallelism = Math.Max(2, Environment.ProcessorCount / 2),
+            MaxDegreeOfParallelism = pending.All(f => f.File.IsOnDevice)
+                ? 2
+                : Math.Max(2, Environment.ProcessorCount / 2),
             CancellationToken = token,
         };
 
